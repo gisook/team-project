@@ -1,0 +1,120 @@
+[gd_scene format=3 uid="uid://dni1vg5m8nkak"]
+
+[ext_resource type="Script" uid="uid://dyowqei60uboa" path="res://scripts/register.gd" id="1_script"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_panel"]
+bg_color = Color(0.125, 0.165, 0.225, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.255, 0.34, 0.43, 1)
+corner_radius_top_left = 18
+corner_radius_top_right = 18
+corner_radius_bottom_right = 18
+corner_radius_bottom_left = 18
+shadow_color = Color(0, 0, 0, 0.35)
+shadow_size = 12
+
+[node name="Register" type="Control" unique_id=1400973640]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_script")
+
+[node name="Background" type="ColorRect" parent="." unique_id=1117241385]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0.055, 0.08, 0.12, 1)
+
+[node name="CenterContainer" type="CenterContainer" parent="." unique_id=1581998693]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Panel" type="PanelContainer" parent="CenterContainer" unique_id=203872621]
+custom_minimum_size = Vector2(530, 344)
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_panel")
+
+[node name="Margin" type="MarginContainer" parent="CenterContainer/Panel" unique_id=1132272651]
+layout_mode = 2
+theme_override_constants/margin_left = 32
+theme_override_constants/margin_top = 28
+theme_override_constants/margin_right = 32
+theme_override_constants/margin_bottom = 28
+
+[node name="Content" type="VBoxContainer" parent="CenterContainer/Panel/Margin" unique_id=1834495562]
+layout_mode = 2
+theme_override_constants/separation = 16
+
+[node name="Title" type="Label" parent="CenterContainer/Panel/Margin/Content" unique_id=2104679168]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.95, 0.97, 1, 1)
+theme_override_font_sizes/font_size = 30
+text = "회원가입"
+horizontal_alignment = 1
+
+[node name="FormRow" type="HBoxContainer" parent="CenterContainer/Panel/Margin/Content" unique_id=1645147475]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="Fields" type="VBoxContainer" parent="CenterContainer/Panel/Margin/Content/FormRow" unique_id=608498718]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 12
+
+[node name="UsernameEdit" type="LineEdit" parent="CenterContainer/Panel/Margin/Content/FormRow/Fields" unique_id=200444230]
+custom_minimum_size = Vector2(285, 48)
+layout_mode = 2
+size_flags_horizontal = 3
+placeholder_text = "아이디"
+
+[node name="PasswordEdit" type="LineEdit" parent="CenterContainer/Panel/Margin/Content/FormRow/Fields" unique_id=934445768]
+custom_minimum_size = Vector2(285, 48)
+layout_mode = 2
+size_flags_horizontal = 3
+placeholder_text = "비밀번호"
+secret = true
+
+[node name="CompleteButton" type="Button" parent="CenterContainer/Panel/Margin/Content/FormRow" unique_id=13102446]
+custom_minimum_size = Vector2(125, 108)
+layout_mode = 2
+size_flags_vertical = 3
+text = "완료"
+
+[node name="BackRow" type="HBoxContainer" parent="CenterContainer/Panel/Margin/Content" unique_id=904357921]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="BackButton" type="Button" parent="CenterContainer/Panel/Margin/Content/BackRow" unique_id=1707475095]
+custom_minimum_size = Vector2(285, 42)
+layout_mode = 2
+size_flags_horizontal = 3
+text = "로그인 화면으로 돌아가기"
+
+[node name="RightSpacer" type="Control" parent="CenterContainer/Panel/Margin/Content/BackRow" unique_id=1797230548]
+custom_minimum_size = Vector2(125, 0)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="StatusLabel" type="Label" parent="CenterContainer/Panel/Margin/Content" unique_id=722535258]
+custom_minimum_size = Vector2(0, 42)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.98, 0.78, 0.5, 1)
+horizontal_alignment = 1
+vertical_alignment = 1
+autowrap_mode = 3
+
+[node name="HTTPRequest" type="HTTPRequest" parent="." unique_id=1484991797]

@@ -1,0 +1,66 @@
+[gd_scene format=3 uid="uid://xeh3fbecagfw"]
+
+[ext_resource type="Script" uid="uid://b62gud5ltqfov" path="res://scripts/game.gd" id="1_uwrxv"]
+[ext_resource type="Script" uid="uid://ck1j1jubby0l7" path="res://scripts/record_ui.gd" id="2_yqjtg"]
+
+[sub_resource type="AudioStreamMicrophone" id="AudioStreamMicrophone_g4v7s"]
+
+[node name="Game" type="Node2D" unique_id=1571584644]
+script = ExtResource("1_uwrxv")
+
+[node name="CanvasLayer" type="CanvasLayer" parent="." unique_id=1156912044]
+
+[node name="RecordUI" type="Control" parent="CanvasLayer" unique_id=1577003380]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("2_yqjtg")
+
+[node name="RecordButton" type="Button" parent="CanvasLayer/RecordUI" unique_id=1146349980]
+layout_mode = 1
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -105.0
+offset_top = -100.0
+offset_right = 105.0
+offset_bottom = -50.0
+grow_horizontal = 2
+text = "녹음 시작"
+
+[node name="Microphone" type="AudioStreamPlayer" parent="CanvasLayer/RecordUI" unique_id=360406808]
+stream = SubResource("AudioStreamMicrophone_g4v7s")
+bus = &"Record"
+
+[node name="HTTPRequest" type="HTTPRequest" parent="CanvasLayer/RecordUI" unique_id=1529708904]
+
+[node name="ChoiceUI" type="Control" parent="CanvasLayer" unique_id=792982603]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="CenterContainer" type="CenterContainer" parent="CanvasLayer/ChoiceUI" unique_id=1744928118]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="VBoxContainer" type="VBoxContainer" parent="CanvasLayer/ChoiceUI/CenterContainer" unique_id=1135232841]
+custom_minimum_size = Vector2(480, 0)
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 20
+
+[connection signal="pressed" from="CanvasLayer/RecordUI/RecordButton" to="CanvasLayer/RecordUI" method="_on_record_button_pressed"]

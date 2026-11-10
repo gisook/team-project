@@ -1,0 +1,37 @@
+[gd_scene format=3 uid="uid://jqpw4dw212s7"]
+
+[ext_resource type="Script" uid="uid://dumppiw7gqtij" path="res://scripts/main_menu.gd" id="1_ekxnf"]
+[ext_resource type="Texture2D" uid="uid://ctcfu0cw6dlio" path="res://images.jpg" id="1_l6cm7"]
+
+[node name="MainMenu" type="Control" unique_id=1024452773]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_ekxnf")
+
+[node name="TextureRect" type="TextureRect" parent="." unique_id=1277509116]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+texture = ExtResource("1_l6cm7")
+
+[node name="CenterContainer" type="CenterContainer" parent="." unique_id=1396882604]
+custom_minimum_size = Vector2(200, 80)
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="StartButton" type="Button" parent="CenterContainer" unique_id=582959375]
+layout_mode = 2
+text = "게임 시작"
+
+[connection signal="pressed" from="CenterContainer/StartButton" to="." method="_on_start_button_pressed"]
