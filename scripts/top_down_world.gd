@@ -1,21 +1,20 @@
 extends Control
 
 const DayState = preload("res://scripts/day_state.gd")
-const MapView = preload("res://scripts/top_down_map.gd")
+const MapView = preload("res://scripts/authored_map.gd")
 const StoreDialogues = preload("res://scripts/store_dialogues.gd")
 const RecordUI = preload("res://scripts/record_ui.gd")
 const DIRECTIONS := [Vector2i.RIGHT, Vector2i.UP, Vector2i.LEFT, Vector2i.DOWN]
-const BED := Rect2i(2, 2, 3, 4)
-const DESK := Rect2i(10, 3, 4, 2)
-const COUNTER := Rect2i(2, 3, 4, 1)
-const SHELF := Rect2i(7, 5, 2, 3)
-const FRIDGE := Rect2i(12, 1, 3, 2)
+const BED := Rect2i(2, 2, 3, 3)
+const ROOM_SPAWN := Vector2i(5, 3)
+const CASHIER_SPOT := Vector2i(1, 1)
+const CUSTOMER_SPAWNS := [Vector2i(1, 13), Vector2i(5, 13), Vector2i(10, 13)]
 const STEP_SECONDS := 0.16
 
 var state: Dictionary
 var map: Control
-var player_cell := Vector2i(5, 5)
-var player_from := Vector2(5, 5)
+var player_cell := ROOM_SPAWN
+var player_from := Vector2(ROOM_SPAWN)
 var step_time := 0.0
 var step_active := false
 var customers: Array[Dictionary] = []
@@ -213,6 +212,7 @@ func _enter_location(next: String) -> void:
 	location = next
 	state = DayState.load_state()
 	map.location = location
+	map.load_location(location)
 	map.period = str(state["period"])
 	map.focused_customer = -1
 	map.sleeping = false
@@ -221,19 +221,19 @@ func _enter_location(next: String) -> void:
 	map.moving = false
 	customers.clear()
 	if location == "store":
-		player_cell = Vector2i(4, 1)
+		player_cell = CASHIER_SPOT
 		var completed: Array = state.get("customers_done", [])
 		var data: Array[Dictionary] = StoreDialogues.customers(int(state["day"]), str(state["period"]))
 		for i in range(data.size()):
 			var c: Dictionary = data[i]
 			c["done"] = c["id"] in completed
-			c["cell"] = c["target"] if c["done"] else Vector2i(8 + i, 15)
+			c["cell"] = c["target"] if c["done"] else CUSTOMER_SPAWNS[i]
 			c["visual"] = Vector2(c["cell"])
 			c["moving"] = false
 			c["facing"] = 1
 			customers.append(c)
 	else:
-		player_cell = Vector2i(5, 5)
+		player_cell = ROOM_SPAWN
 	map.player = Vector2(player_cell)
 	map.customers = customers
 	_update_hud()
@@ -256,6 +256,7 @@ func _process(delta: float) -> void:
 	_update_movement(delta)
 	_move_customers(delta)
 	var target := _interaction_target()
+	map.highlighted_customer = int(target.get_slice(":", 1)) if target.begins_with("npc:") else -1
 	if target == "phone":
 		hint.text = "E · 휴대폰으로 %s 일정 선택" % ("오전" if state["period"] == "morning" else "오후")
 	elif target == "bed": hint.text = "E · 침대에 누워 다음 날까지 자기"
@@ -304,10 +305,7 @@ func _update_movement(delta: float) -> void:
 
 
 func _blocked(cell: Vector2i) -> bool:
-	if not Rect2i(0, 0, 16, 16).has_point(cell): return true
-	if location == "room":
-		return BED.has_point(cell) or DESK.has_point(cell)
-	return COUNTER.has_point(cell) or SHELF.has_point(cell) or FRIDGE.has_point(cell)
+	return map.is_blocked(cell)
 
 
 func _occupied(cell: Vector2i, except_index: int = -1) -> bool:
@@ -363,13 +361,13 @@ func _near_rect(rect: Rect2i) -> bool:
 func _interaction_target() -> String:
 	if location == "room":
 		if state["period"] == "night" and _near_rect(BED): return "bed"
-		if state["period"] != "night" and _near_rect(Rect2i(11, 4, 1, 1)): return "phone"
+		if state["period"] != "night" and _near_rect(Rect2i(11, 3, 1, 1)): return "phone"
 	else:
 		for i in range(customers.size()):
 			var c: Dictionary = customers[i]
 			if c["done"] or c["moving"] or c["cell"] != c["target"]: continue
 			if c["id"] == "counter":
-				if player_cell == Vector2i(4, 2): return "npc:%d" % i
+				if player_cell == CASHIER_SPOT: return "npc:%d" % i
 			else:
 				var diff: Vector2i = c["cell"] - player_cell
 				if absi(diff.x) + absi(diff.y) == 1: return "npc:%d" % i
