@@ -399,9 +399,6 @@ animation = &"walk_down"
 position = Vector2(0, 14.5)
 shape = SubResource("RectangleShape2D_xrivr")
 
-[node name="Camera2D" type="Camera2D" parent="." unique_id=24520052]
-zoom = Vector2(3, 3)
-
 [node name="InteractArea" type="Area2D" parent="." unique_id=680651799]
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="InteractArea" unique_id=1940299548]
