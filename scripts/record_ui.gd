@@ -21,6 +21,7 @@ enum RecordState { IDLE, READY, RECORDING, SAVING, UPLOADING }
 var record_effect: AudioEffectRecord
 var state: RecordState = RecordState.IDLE
 var save_path: String = ""
+var capture_enabled: bool = true
 
 var upload_queue: Array[Dictionary] = []
 var upload_index: int = 0
@@ -32,6 +33,9 @@ func _ready() -> void:
 	http_request.timeout = 12.0
 	record_button.hide()
 	record_button.disabled = true
+	http_request.request_completed.connect(_on_upload_completed)
+	if not capture_enabled:
+		return
 
 	var bus_index: int = AudioServer.get_bus_index("Record")
 	if bus_index == -1:
@@ -54,8 +58,15 @@ func _ready() -> void:
 	microphone.bus = &"Record"
 	microphone.play()
 
-	http_request.request_completed.connect(_on_upload_completed)
 	print("마이크 녹음 준비 완료")
+
+
+func _exit_tree() -> void:
+	if capture_enabled:
+		if record_effect != null:
+			record_effect.set_recording_active(false)
+		if is_instance_valid(microphone):
+			microphone.stop()
 
 
 # game.gd에서 선택지에 맞는 고유한 WAV 저장 경로를 지정합니다.
