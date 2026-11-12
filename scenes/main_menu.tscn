@@ -2,6 +2,8 @@
 
 [ext_resource type="Script" uid="uid://dumppiw7gqtij" path="res://scripts/main_menu.gd" id="1_ekxnf"]
 [ext_resource type="Texture2D" uid="uid://ctcfu0cw6dlio" path="res://images.jpg" id="1_l6cm7"]
+[ext_resource type="PackedScene" uid="uid://brydx5jaimkvy" path="res://scenes/button/QuitButton.tscn" id="3_bqqt6"]
+[ext_resource type="Script" uid="uid://cepaxwj803nnm" path="res://scenes/button/quit_button.gd" id="4_wu84c"]
 
 [node name="MainMenu" type="Control" unique_id=1024452773]
 layout_mode = 3
@@ -21,17 +23,34 @@ grow_horizontal = 2
 grow_vertical = 2
 texture = ExtResource("1_l6cm7")
 
-[node name="CenterContainer" type="CenterContainer" parent="." unique_id=1396882604]
+[node name="CenterContainer" type="VBoxContainer" parent="." unique_id=1476125949]
 custom_minimum_size = Vector2(200, 80)
 layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -100.0
+offset_top = -40.0
+offset_right = 100.0
+offset_bottom = 40.0
 grow_horizontal = 2
 grow_vertical = 2
+offset_transform_enabled = true
 
 [node name="StartButton" type="Button" parent="CenterContainer" unique_id=582959375]
 layout_mode = 2
 text = "게임 시작"
+
+[node name="QuitButton" parent="CenterContainer" unique_id=1783816946 node_paths=PackedStringArray("quit_dialog") instance=ExtResource("3_bqqt6")]
+layout_mode = 2
+script = ExtResource("4_wu84c")
+quit_dialog = NodePath("../../QuitConfirmDialog")
+
+[node name="QuitConfirmDialog" type="ConfirmationDialog" parent="." unique_id=1841210575]
+ok_button_text = "예"
+dialog_text = "정말로 게임을 종료하시겠습니까?"
+cancel_button_text = "아니요"
 
 [connection signal="pressed" from="CenterContainer/StartButton" to="." method="_on_start_button_pressed"]
