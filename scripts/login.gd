@@ -7,7 +7,7 @@ const SERVER_URL: String = "http://121.188.96.177:8000"
 # 실제 서버에서 요구하는 JSON 필드명
 const USERNAME_FIELD: String = "username"
 const REGISTER_SCENE_PATH: String = "res://scenes/register.tscn"
-const MAIN_MENU_SCENE_PATH: String = "res://scenes/main_menu.tscn"
+const ROOM_SCENE_PATH: String = "res://scenes/room.tscn"
 
 @onready var username_edit: LineEdit = $CenterContainer/Panel/Margin/Content/FormRow/Fields/UsernameEdit
 @onready var password_edit: LineEdit = $CenterContainer/Panel/Margin/Content/FormRow/Fields/PasswordEdit
@@ -130,9 +130,9 @@ func _on_request_completed(
 		status_label.text = "로그인 성공: %s" % server_username
 		DayState.set_account(server_username)
 
-		var scene_error: Error = get_tree().change_scene_to_file(MAIN_MENU_SCENE_PATH)
+		var scene_error: Error = get_tree().change_scene_to_file(ROOM_SCENE_PATH)
 		if scene_error != OK:
-			status_label.text = "로그인 확인 완료, 메인 메뉴 열기 실패 (오류: %d)" % scene_error
+			status_label.text = "로그인 확인 완료, 내 방 열기 실패 (오류: %d)" % scene_error
 		return
 
 	var server_message: String = _read_server_error(body)

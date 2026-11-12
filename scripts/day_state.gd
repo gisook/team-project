@@ -56,9 +56,11 @@ static func load_state() -> Dictionary:
 	return {
 		"day": maxi(1, int(state.get("day", 1))),
 		"period": period,
-		"status": "dialogue" if (str(state.get("status", "room")) == "dialogue" and not active_id.is_empty()) else "room",
+		"status": "store" if str(state.get("status", "room")) == "store" else ("dialogue" if (str(state.get("status", "room")) == "dialogue" and not active_id.is_empty()) else "room"),
 		"active_dialogue_id": active_id,
-		"schedule_start_id": str(state.get("schedule_start_id", ""))
+		"schedule_start_id": str(state.get("schedule_start_id", "")),
+		"customers_done": state.get("customers_done", []) if state.get("customers_done", []) is Array else [],
+		"shift_id": str(state.get("shift_id", ""))
 	}
 
 
@@ -92,9 +94,14 @@ static func set_active_dialogue(id: String) -> bool:
 
 static func finish_schedule() -> bool:
 	var state := load_state()
-	if str(state["status"]) != "dialogue":
+	if str(state["status"]) not in ["dialogue", "store"]:
 		return false
+	if str(state["status"]) == "store":
+		for customer in ["counter", "shelf", "fridge"]:
+			if customer not in state.get("customers_done", []):
+				return false
 	state["status"] = "room"
+	state["customers_done"] = []
 	state["active_dialogue_id"] = ""
 	state["schedule_start_id"] = ""
 	if str(state["period"]) == "morning":
@@ -120,4 +127,25 @@ static func abort_schedule() -> bool:
 	state["status"] = "room"
 	state["active_dialogue_id"] = ""
 	state["schedule_start_id"] = ""
+	return save_state(state)
+
+
+static func start_store_shift() -> bool:
+	var state := load_state()
+	if str(state["status"]) != "room" or str(state["period"]) == "night":
+		return false
+	state["status"] = "store"
+	state["customers_done"] = []
+	state["shift_id"] = "%d_%d" % [int(Time.get_unix_time_from_system()), Time.get_ticks_usec()]
+	return save_state(state)
+
+
+static func complete_customer(id: String) -> bool:
+	var state := load_state()
+	if str(state["status"]) != "store":
+		return false
+	var completed: Array = state.get("customers_done", [])
+	if id not in completed:
+		completed.append(id)
+	state["customers_done"] = completed
 	return save_state(state)
