@@ -8,8 +8,6 @@ const SERVER_URL: String = "http://121.188.96.177:8000"
 const USERNAME_FIELD: String = "username"
 const REGISTER_SCENE_PATH: String = "res://scenes/register.tscn"
 const ROOM_SCENE_PATH: String = "res://scenes/room.tscn"
-const DEVELOPER_USERNAME := "도지머스크"
-const DEVELOPER_PASSWORD := "12345"
 
 @onready var username_edit: LineEdit = $CenterContainer/Panel/Margin/Content/FormRow/Fields/UsernameEdit
 @onready var password_edit: LineEdit = $CenterContainer/Panel/Margin/Content/FormRow/Fields/PasswordEdit
@@ -55,35 +53,6 @@ func _on_login_pressed() -> void:
 	if username.is_empty() or password.is_empty():
 		status_label.text = "아이디와 비밀번호를 모두 입력해 주세요."
 		return
-
-	# 이 예약 계정은 서버로 전송하지 않습니다. 일반 계정은 기존 인증을 사용합니다.
-	if username == DEVELOPER_USERNAME:
-		if not _developer_login_enabled():
-			status_label.text = "개발자 전용 로그인이 비활성화되어 있습니다."
-		elif password != DEVELOPER_PASSWORD:
-			status_label.text = "아이디 또는 비밀번호를 확인해 주세요."
-		else:
-			_enter_room(DEVELOPER_USERNAME)
-		return
-
-	_request_server_login(username, password)
-
-
-func _developer_login_enabled() -> bool:
-	return OS.is_debug_build() and bool(ProjectSettings.get_setting("developer/login_enabled", false))
-
-
-func _enter_room(username: String) -> void:
-	_set_requesting(true)
-	password_edit.clear()
-	DayState.set_account(username)
-	var scene_error: Error = get_tree().change_scene_to_file(ROOM_SCENE_PATH)
-	if scene_error != OK:
-		_set_requesting(false)
-		status_label.text = "로그인 확인 완료, 내 방 열기 실패 (오류: %d)" % scene_error
-
-
-func _request_server_login(username: String, password: String) -> void:
 
 	# 서버의 요청 스키마에 맞는 username/password 전송
 	submitted_username = username
@@ -159,7 +128,11 @@ func _on_request_completed(
 		# 서버의 로그인 승인 응답을 검증했습니다. 비밀번호는 로그에 남기지 않습니다.
 		print("LOGIN VERIFIED: user_id=", user_id, ", username=", server_username)
 		status_label.text = "로그인 성공: %s" % server_username
-		_enter_room(server_username)
+		DayState.set_account(server_username)
+
+		var scene_error: Error = get_tree().change_scene_to_file(ROOM_SCENE_PATH)
+		if scene_error != OK:
+			status_label.text = "로그인 확인 완료, 내 방 열기 실패 (오류: %d)" % scene_error
 		return
 
 	var server_message: String = _read_server_error(body)

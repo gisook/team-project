@@ -27,12 +27,6 @@ window/size/viewport_height=730
 window/stretch/mode="canvas_items"
 window/stretch/aspect="expand"
 
-[developer]
-
-; false로 바꾸면 개발자 전용 로컬 로그인을 비활성화합니다.
-; 릴리스 빌드에서는 이 설정과 관계없이 항상 비활성화됩니다.
-login_enabled=true
-
 [physics]
 
 3d/physics_engine="Jolt Physics"
