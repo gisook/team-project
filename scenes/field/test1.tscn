@@ -1,5 +1,7 @@
 [gd_scene format=4 uid="uid://c63osdvaw2r0h"]
 
+[ext_resource type="Script" path="res://scripts/gameplay_marker.gd" id="5_markers"]
+
 [ext_resource type="Texture2D" uid="uid://buhcv4do0o534" path="res://image/Interiors_free/16x16/Interiors_free_16x16.png" id="1_0320c"]
 [ext_resource type="Texture2D" uid="uid://dikful3bhpyji" path="res://image/Interiors_free/16x16/Room_Builder_free_16x16.png" id="2_fdsmj"]
 [ext_resource type="PackedScene" uid="uid://te0sei2euqjf" path="res://scenes/character/maincharacter/maincharacter.tscn" id="3_bm81j"]
@@ -2746,3 +2748,73 @@ position = Vector2(105, 247)
 
 [node name="Npc3" parent="." unique_id=1635939670 instance=ExtResource("4_fdsmj")]
 position = Vector2(184, 246)
+
+[node name="Gameplay" type="Node2D" parent="."]
+z_index = 2
+
+[node name="PlayerSpawn" type="Marker2D" parent="Gameplay"]
+position = Vector2(40, 56)
+script = ExtResource("5_markers")
+role = "player_spawn"
+
+[node name="Cashier" type="Marker2D" parent="Gameplay"]
+position = Vector2(40, 56)
+script = ExtResource("5_markers")
+role = "cashier"
+customer_id = &"counter"
+interaction_distance = 0
+
+[node name="CounterTarget" type="Marker2D" parent="Gameplay"]
+position = Vector2(40, 88)
+script = ExtResource("5_markers")
+role = "npc_target"
+customer_id = &"counter"
+
+[node name="ShelfTarget" type="Marker2D" parent="Gameplay"]
+position = Vector2(120, 120)
+script = ExtResource("5_markers")
+role = "npc_target"
+customer_id = &"shelf"
+
+[node name="FridgeTarget" type="Marker2D" parent="Gameplay"]
+position = Vector2(184, 216)
+script = ExtResource("5_markers")
+role = "npc_target"
+customer_id = &"fridge"
+
+[node name="CounterSpawn" type="Marker2D" parent="Gameplay"]
+position = Vector2(40, 248)
+script = ExtResource("5_markers")
+role = "npc_spawn"
+customer_id = &"counter"
+
+[node name="ShelfSpawn" type="Marker2D" parent="Gameplay"]
+position = Vector2(104, 248)
+script = ExtResource("5_markers")
+role = "npc_spawn"
+customer_id = &"shelf"
+
+[node name="FridgeSpawn" type="Marker2D" parent="Gameplay"]
+position = Vector2(184, 248)
+script = ExtResource("5_markers")
+role = "npc_spawn"
+customer_id = &"fridge"
+
+[node name="DrinkFridge" type="Marker2D" parent="Gameplay"]
+position = Vector2(192, 192)
+script = ExtResource("5_markers")
+role = "fridge"
+footprint = Vector2i(3, 3)
+blocks_movement = true
+visual_offset = Vector2(-2, -15)
+visual_size = Vector2(52, 65)
+
+[node name="CounterPassage" type="Marker2D" parent="Gameplay"]
+position = Vector2(72, 40)
+script = ExtResource("5_markers")
+role = "passage"
+
+[node name="ViewBounds" type="Marker2D" parent="Gameplay"]
+script = ExtResource("5_markers")
+role = "view_bounds"
+footprint = Vector2i(17, 19)

@@ -5,16 +5,12 @@ const MapView = preload("res://scripts/authored_map.gd")
 const StoreDialogues = preload("res://scripts/store_dialogues.gd")
 const RecordUI = preload("res://scripts/record_ui.gd")
 const DIRECTIONS := [Vector2i.RIGHT, Vector2i.UP, Vector2i.LEFT, Vector2i.DOWN]
-const BED := Rect2i(2, 2, 3, 3)
-const ROOM_SPAWN := Vector2i(5, 3)
-const CASHIER_SPOT := Vector2i(1, 1)
-const CUSTOMER_SPAWNS := [Vector2i(1, 13), Vector2i(5, 13), Vector2i(10, 13)]
 const STEP_SECONDS := 0.16
 
 var state: Dictionary
 var map: Control
-var player_cell := ROOM_SPAWN
-var player_from := Vector2(ROOM_SPAWN)
+var player_cell := Vector2i.ZERO
+var player_from := Vector2.ZERO
 var step_time := 0.0
 var step_active := false
 var customers: Array[Dictionary] = []
@@ -212,7 +208,11 @@ func _enter_location(next: String) -> void:
 	location = next
 	state = DayState.load_state()
 	map.location = location
-	map.load_location(location)
+	if not map.load_location(location):
+		transition = true
+		feedback.text = "맵 설정 오류: " + "; ".join(map.layout_errors)
+		hint.text = "맵 장면의 기능 표시점을 확인해 주세요."
+		return
 	map.period = str(state["period"])
 	map.focused_customer = -1
 	map.sleeping = false
@@ -221,19 +221,20 @@ func _enter_location(next: String) -> void:
 	map.moving = false
 	customers.clear()
 	if location == "store":
-		player_cell = CASHIER_SPOT
+		player_cell = map.layout.cell("player_spawn")
 		var completed: Array = state.get("customers_done", [])
 		var data: Array[Dictionary] = StoreDialogues.customers(int(state["day"]), str(state["period"]))
 		for i in range(data.size()):
 			var c: Dictionary = data[i]
+			c["target"] = map.layout.cell("npc_target", StringName(c["id"]))
 			c["done"] = c["id"] in completed
-			c["cell"] = c["target"] if c["done"] else CUSTOMER_SPAWNS[i]
+			c["cell"] = c["target"] if c["done"] else map.layout.cell("npc_spawn", StringName(c["id"]))
 			c["visual"] = Vector2(c["cell"])
 			c["moving"] = false
 			c["facing"] = 1
 			customers.append(c)
 	else:
-		player_cell = ROOM_SPAWN
+		player_cell = map.layout.cell("player_spawn")
 	map.player = Vector2(player_cell)
 	map.customers = customers
 	_update_hud()
@@ -352,25 +353,18 @@ func _path_step(start: Vector2i, target: Vector2i, index: int) -> Vector2i:
 	return start
 
 
-func _near_rect(rect: Rect2i) -> bool:
-	var nearest := Vector2i(clampi(player_cell.x, rect.position.x, rect.end.x - 1), clampi(player_cell.y, rect.position.y, rect.end.y - 1))
-	var diff := nearest - player_cell
-	return absi(diff.x) + absi(diff.y) <= 1
-
-
 func _interaction_target() -> String:
 	if location == "room":
-		if state["period"] == "night" and _near_rect(BED): return "bed"
-		if state["period"] != "night" and _near_rect(Rect2i(11, 3, 1, 1)): return "phone"
+		if state["period"] == "night" and map.layout.near("bed", player_cell): return "bed"
+		if state["period"] != "night" and map.layout.near("phone", player_cell): return "phone"
 	else:
 		for i in range(customers.size()):
 			var c: Dictionary = customers[i]
 			if c["done"] or c["moving"] or c["cell"] != c["target"]: continue
 			if c["id"] == "counter":
-				if player_cell == CASHIER_SPOT: return "npc:%d" % i
+				if map.layout.near("cashier", player_cell, &"counter"): return "npc:%d" % i
 			else:
-				var diff: Vector2i = c["cell"] - player_cell
-				if absi(diff.x) + absi(diff.y) == 1: return "npc:%d" % i
+				if map.layout.near("npc_target", player_cell, StringName(c["id"])): return "npc:%d" % i
 	return ""
 
 
@@ -391,7 +385,7 @@ func _change_location(next: String) -> void:
 	var reveal := create_tween()
 	reveal.tween_property(fade, "color:a", 0.0, 0.3)
 	await reveal.finished
-	transition = false
+	transition = not map.layout_errors.is_empty()
 
 
 func _start_dialogue(index: int) -> void:
@@ -500,7 +494,7 @@ func _finish_shift() -> void:
 func _sleep() -> void:
 	transition = true
 	map.sleeping = true
-	map.player = Vector2(3, 3)
+	map.player = map.layout.sleep_cell()
 	hint.text = "침대에 누웠습니다. 푹 쉬세요…"
 	await get_tree().create_timer(0.7).timeout
 	var darken := create_tween()
@@ -512,7 +506,7 @@ func _sleep() -> void:
 	var dawn := create_tween()
 	dawn.tween_property(fade, "color:a", 0.0, 0.65)
 	await dawn.finished
-	transition = false
+	transition = not map.layout_errors.is_empty()
 
 
 func _load_pending() -> void:

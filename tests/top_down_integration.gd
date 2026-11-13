@@ -27,12 +27,14 @@ func _run() -> void:
 	root.add_child(world)
 	await process_frame
 	world.set_process(false)
-	check(world.location == "room" and world.player_cell == Vector2i(5, 3), "start beside bed in authored room")
+	var room_spawn: Vector2i = world.map.layout.cell("player_spawn")
+	var phone_spot: Vector2i = world.map.layout.cell("phone") + Vector2i.DOWN
+	check(world.location == "room" and world.player_cell == room_spawn, "start at authored player marker")
 	check(world.map.field.scene_file_path == "res://scenes/field/myroom.tscn", "uploaded room scene is the playable map")
-	check(world._blocked(Vector2i(-1, 0)) and world._blocked(Vector2i(15, 15)), "authored floor bounds")
-	check(world._blocked(Vector2i(3, 3)) and world._blocked(Vector2i(11, 3)), "authored bed and desk collision")
+	check(world._blocked(Vector2i(-1, 0)) and world._blocked(Vector2i(16, 17)), "authored floor bounds")
+	check(world._blocked(world.map.layout.cell("bed")) and world._blocked(world.map.layout.cell("phone")), "authored bed and desk collision")
 	check(world._interaction_target() == "", "daytime bed cannot be used")
-	check(world._path_step(world.player_cell, Vector2i(11, 4), -1) != world.player_cell, "phone is reachable around the authored furniture")
+	check(world._path_step(world.player_cell, phone_spot, -1) != world.player_cell, "phone is reachable around the authored furniture")
 	var key := InputEventKey.new()
 	key.physical_keycode = KEY_D
 	key.pressed = true
@@ -45,16 +47,16 @@ func _run() -> void:
 	Input.parse_input_event(release)
 	Input.flush_buffered_events()
 	world._update_movement(0.2)
-	check(world.player_cell == Vector2i(6, 3) and world.map.player == Vector2(6, 3), "WASD advances one cell with interpolation")
-	world.player_cell = Vector2i(11, 4)
+	check(world.player_cell == room_spawn + Vector2i.RIGHT and world.map.player == Vector2(room_spawn + Vector2i.RIGHT), "WASD advances one cell with interpolation")
+	world.player_cell = phone_spot
 	check(world._interaction_target() == "phone", "phone proximity prompt")
-	world.player_cell = Vector2i(5, 3)
+	world.player_cell = room_spawn
 	for shift in range(2):
 		world._start_shift()
 		await create_timer(0.7).timeout
 		check(world.location == "store" and world.customers.size() == 3, "shift %d has three customers" % shift)
 		check(world.map.field.scene_file_path == "res://scenes/field/test1.tscn", "uploaded convenience store scene is the playable map")
-		check(not world._blocked(Vector2i(3, 0)), "cashier passage is open")
+		check(not world._blocked(world.map.layout.cell("passage")), "cashier passage marker opens a tile")
 		check(not DayState.sleep_and_save(), "cannot sleep while working")
 		check(not DayState.finish_schedule(), "cannot end shift before all customers")
 		for step in range(250): world._move_customers(0.31)
@@ -62,19 +64,22 @@ func _run() -> void:
 		for c in world.customers:
 			arrived = arrived and c["cell"] == c["target"] and not c["moving"]
 		check(arrived, "all NPCs pathfind to distinct destinations")
-		world.player_cell = Vector2i(1, 4)
+		world.player_cell = world.map.layout.cell("npc_target", &"counter") + Vector2i.DOWN
 		check(world._interaction_target() == "", "counter customer requires cashier side")
-		world.player_cell = Vector2i(1, 1)
+		var cashier: Vector2i = world.map.layout.cell("cashier", &"counter")
+		var shelf_side: Vector2i = world.map.layout.cell("npc_target", &"shelf") + Vector2i.LEFT
+		var fridge_side: Vector2i = world.map.layout.cell("npc_target", &"fridge") + Vector2i.LEFT
+		world.player_cell = cashier
 		check(world._interaction_target() == "npc:0", "cashier side interaction")
-		check(world._path_step(world.player_cell, Vector2i(5, 5), -1) != world.player_cell, "cashier can reach shelf customer through the passage")
-		check(world._path_step(world.player_cell, Vector2i(9, 11), -1) != world.player_cell, "cashier can reach fridge customer")
-		world.player_cell = Vector2i(5, 5)
+		check(world._path_step(world.player_cell, shelf_side, -1) != world.player_cell, "cashier can reach shelf customer through the passage")
+		check(world._path_step(world.player_cell, fridge_side, -1) != world.player_cell, "cashier can reach fridge customer")
+		world.player_cell = shelf_side
 		check(world._interaction_target() == "npc:1", "shelf customer responds from an adjacent floor tile")
-		world.player_cell = Vector2i(9, 11)
+		world.player_cell = fridge_side
 		check(world._interaction_target() == "npc:2", "fridge customer responds from an adjacent floor tile")
 		world._process(0)
 		check(world.map.highlighted_customer == 2, "nearby interaction target is highlighted")
-		world.player_cell = Vector2i(1, 1)
+		world.player_cell = cashier
 		for i in range(3):
 			world._start_dialogue(i)
 			check(world.recorder.state == VoiceRecordUI.RecordState.IDLE, "recording hidden before answer")
@@ -101,11 +106,11 @@ func _run() -> void:
 	restored.set_process(false)
 	check(restored.pending.size() == 6, "persisted recording queue readable after reopening")
 	restored.queue_free()
-	world.player_cell = Vector2i(5, 3)
+	world.player_cell = room_spawn
 	check(world._interaction_target() == "bed", "night bed proximity")
 	world._sleep()
 	await create_timer(3).timeout
-	check(world.state["day"] == 2 and world.state["period"] == "morning" and world.player_cell == Vector2i(5, 3), "sleep returns to next morning beside bed")
+	check(world.state["day"] == 2 and world.state["period"] == "morning" and world.player_cell == room_spawn, "sleep returns to next morning beside bed")
 	check(world._save_pending(), "queue supports atomic overwrite")
 	world.queue_free()
 	await process_frame

@@ -1,20 +1,14 @@
 extends Control
 
 # The authored TileMapLayers remain the visual and collision source of truth.
-# Gameplay cells start at the north-west walkable floor tile (native cell 1, 2).
-const CELL_ORIGIN := Vector2i(1, 2)
-const TILE := 16.0
-const ROOM = preload("res://scenes/field/myroom.tscn")
-const STORE = preload("res://scenes/field/test1.tscn")
+const MapLayout = preload("res://scripts/map_layout.gd")
 const NPC = preload("res://scenes/character/npc/npc1.tscn")
-const FURNITURE = preload("res://assets/generated/furniture.png")
 const DIRECTIONS := ["right", "up", "left", "down"]
 const SHEET_OFFSETS := {"left": 0, "right": 6, "up": 12, "down": 18}
-const FRIDGE := Rect2i(11, 10, 3, 3)
 
 var location := "room"
 var period := "morning"
-var player := Vector2(5, 3)
+var player := Vector2.ZERO
 var facing := 3
 var moving := false
 var sleeping := false
@@ -29,45 +23,29 @@ var npc_actors: Array[CharacterBody2D] = []
 var loaded_location := ""
 var frame_cache: Dictionary = {}
 var decorations: Node2D
+var layout: RefCounted
+var layout_errors: Array[String] = []
 
 
 class Decorations extends Node2D:
 	var map: Control
 
 	func _draw() -> void:
-		if map.location == "room":
-			# A separate phone is placed on the existing right-hand desk.
-			draw_rect(Rect2(197, 71, 6, 10), Color("32323f"))
-			draw_rect(Rect2(198, 72, 4, 7), Color("bce8ce") if map.period != "night" else Color("63717e"))
-			# The existing north wall receives a time-of-day window.
-			draw_rect(Rect2(104, 4, 64, 24), Color("5b5364"))
-			var sky := Color("a4d8de") if map.period != "night" else Color("25375d")
-			draw_rect(Rect2(107, 7, 58, 18), sky)
-			var sun_y := 21.0 if map.period == "morning" else 12.0
-			draw_circle(Vector2(151, 15 if map.period == "night" else sun_y), 5, Color("fff0b9"))
-			if map.period == "night":
-				draw_circle(Vector2(154, 12), 5, sky)
-				for star in [Vector2(114, 12), Vector2(136, 19), Vector2(159, 21)]:
-					draw_rect(Rect2(star, Vector2.ONE), Color("fff4d6"))
-			draw_rect(Rect2(134, 6, 2, 20), Color("e2dac9"))
-		else:
-			# The uploaded store has no drink fridge. Add it in its open south-east area.
-			draw_texture_rect_region(FURNITURE, Rect2(190, 177, 52, 65), Rect2(670, 410, 510, 590))
-			draw_string(ThemeDB.fallback_font, Vector2(185, 174), "음료 냉장고", HORIZONTAL_ALIGNMENT_LEFT, -1, 7, Color("fff1d6"))
-			for i in range(map.customers.size()):
-				var c: Dictionary = map.customers[i]
-				if c["name"] == "노인":
-					var foot: Vector2 = map.native_point(c["visual"])
-					draw_rect(Rect2(foot + Vector2(-5, -23), Vector2(3, 5)), Color("d0c9c4"))
-					draw_rect(Rect2(foot + Vector2(3, -23), Vector2(3, 5)), Color("d0c9c4"))
-					draw_line(foot + Vector2(7, -10), foot + Vector2(8, 0), Color("ac8665"), 1.5)
-				if i == map.focused_customer: continue
-				var head: Vector2 = map.native_point(c["visual"]) - Vector2(0, 27)
-				var done: bool = c["done"]
-				var ready: bool = not c["moving"] and c["cell"] == c["target"]
-				var icon := "✓" if done else ("E" if ready else "…")
-				draw_circle(head, 5, Color("527872") if done else Color("c29d60"))
-				draw_string(ThemeDB.fallback_font, head + Vector2(-2.5, 2.5), icon, HORIZONTAL_ALIGNMENT_LEFT, -1, 7, Color("fff5df"))
+		if map.location != "store": return
+		for i in range(map.customers.size()):
+			var c: Dictionary = map.customers[i]
+			if c["name"] == "노인":
+				var foot: Vector2 = map.native_point(c["visual"])
+				draw_rect(Rect2(foot + Vector2(-5, -23), Vector2(3, 5)), Color("d0c9c4"))
+				draw_rect(Rect2(foot + Vector2(3, -23), Vector2(3, 5)), Color("d0c9c4"))
+				draw_line(foot + Vector2(7, -10), foot + Vector2(8, 0), Color("ac8665"), 1.5)
+			if i == map.focused_customer: continue
+			var head: Vector2 = map.native_point(c["visual"]) - Vector2(0, 27)
+			var done: bool = c["done"]
+			var ready: bool = not c["moving"] and c["cell"] == c["target"]
+			var icon := "✓" if done else ("E" if ready else "…")
+			draw_circle(head, 5, Color("527872") if done else Color("c29d60"))
+			draw_string(ThemeDB.fallback_font, head + Vector2(-2.5, 2.5), icon, HORIZONTAL_ALIGNMENT_LEFT, -1, 7, Color("fff5df"))
 
 
 func _ready() -> void:
@@ -78,19 +56,39 @@ func _ready() -> void:
 	z_index = -200
 
 
-func load_location(next: String) -> void:
-	if loaded_location == next: return
+func load_location(next: String) -> bool:
+	if loaded_location == next: return layout_errors.is_empty()
 	if is_instance_valid(field):
 		remove_child(field)
 		field.queue_free()
 	npc_actors.clear()
-	loaded_location = next
+	loaded_location = ""
 	location = next
-	field = (ROOM if location == "room" else STORE).instantiate()
+	layout_errors.clear()
+	var source: Variant = ProjectSettings.get_setting("gameplay/maps/" + location)
+	var packed: PackedScene
+	if source is PackedScene:
+		packed = source
+	elif source is String and ResourceLoader.exists(source):
+		packed = load(source) as PackedScene
+	if packed == null:
+		layout_errors.append("프로젝트 설정 gameplay/maps/%s에 맵 장면을 지정해 주세요." % location)
+		return false
+	var instance := packed.instantiate()
+	if not (instance is Node2D):
+		layout_errors.append("맵 장면의 루트는 Node2D여야 합니다.")
+		instance.free()
+		return false
+	field = instance
 	# The shared controller owns movement/input and camera framing in the daily game.
 	# Standalone scene previews retain their original scripts and camera.
-	field.get_node("Camera2D").enabled = false
-	player_actor = field.get_node("Maincharacter")
+	var camera := field.get_node_or_null("Camera2D") as Camera2D
+	if camera != null: camera.enabled = false
+	player_actor = field.get_node_or_null("Maincharacter") as CharacterBody2D
+	if player_actor == null:
+		layout_errors.append("맵에 Maincharacter 캐릭터가 필요합니다.")
+		field.free()
+		return false
 	player_actor.set_physics_process(false)
 	player_actor.set_process_unhandled_input(false)
 	for child in field.get_children():
@@ -101,11 +99,12 @@ func load_location(next: String) -> void:
 	# Entering the tree enables script callbacks, so disable the standalone driver afterwards.
 	player_actor.set_physics_process(false)
 	player_actor.set_process_unhandled_input(false)
-	floor_layer = field.get_node("FloorLayer")
-	furniture_layer = field.get_node("FurnitureLayer")
-	if location == "store":
-		# Open one counter tile so the cashier can walk to the shelves and return.
-		furniture_layer.erase_cell(Vector2i(4, 2))
+	floor_layer = field.get_node_or_null("FloorLayer") as TileMapLayer
+	furniture_layer = field.get_node_or_null("FurnitureLayer") as TileMapLayer
+	layout = MapLayout.new(field, location)
+	layout_errors.assign(layout.errors)
+	if not layout_errors.is_empty(): return false
+	loaded_location = next
 	# Read tile collision data for navigation; native physics is not used to move grid actors.
 	floor_layer.collision_enabled = false
 	furniture_layer.collision_enabled = false
@@ -134,22 +133,25 @@ func load_location(next: String) -> void:
 	decorations.map = self
 	decorations.z_index = 100
 	field.add_child(decorations)
+	return true
 
 
 func native_point(cell: Vector2) -> Vector2:
-	return (cell + Vector2(CELL_ORIGIN) + Vector2(0.5, 0.5)) * TILE
+	return layout.native_point(cell)
 
 
 func map_scale() -> float:
 	# Kept in 32-pixel gameplay units for the shared dialogue bubble layout.
-	return minf((size.y - 150) / 608.0, (size.x - 36) / 544.0)
+	var bounds: Rect2 = layout.view_rect()
+	return minf((size.y - 150) / maxf(1, bounds.size.y), (size.x - 36) / maxf(1, bounds.size.x)) * 0.5
 
 
 func field_origin() -> Vector2:
 	var s := map_scale() * 2
 	if focused_customer >= 0 and focused_customer < customers.size():
 		return Vector2(size.x * 0.5, size.y * 0.37) - native_point(customers[focused_customer]["visual"]) * s
-	return Vector2((size.x - 272 * s) * 0.5, 96)
+	var bounds: Rect2 = layout.view_rect()
+	return Vector2((size.x - bounds.size.x * s) * 0.5, 96) - bounds.position * s
 
 
 func screen_point(cell: Vector2) -> Vector2:
@@ -157,13 +159,7 @@ func screen_point(cell: Vector2) -> Vector2:
 
 
 func is_blocked(cell: Vector2i) -> bool:
-	var raw := cell + CELL_ORIGIN
-	var data := floor_layer.get_cell_tile_data(raw)
-	if data == null: return true
-	if floor_layer.tile_set.get_physics_layers_count() > 0 and data.get_collision_polygons_count(0) > 0:
-		return true
-	if furniture_layer.get_cell_source_id(raw) != -1: return true
-	return location == "store" and FRIDGE.has_point(cell)
+	return layout.blocked(cell)
 
 
 func _frames(appearance: String) -> SpriteFrames:
@@ -186,11 +182,12 @@ func _frames(appearance: String) -> SpriteFrames:
 
 
 func _process(_delta: float) -> void:
-	if not is_instance_valid(field): return
+	if not is_instance_valid(field) or not layout_errors.is_empty(): return
 	field.position = field_origin()
 	field.scale = Vector2.ONE * map_scale() * 2
 	field.modulate = Color("8390ac") if period == "night" and location == "room" else (Color("fff1d9") if period == "afternoon" and location == "room" else Color.WHITE)
-	player_actor.position = native_point(Vector2(3, 3) if sleeping else player) - Vector2(0, 16)
+	player_actor.position = native_point(layout.sleep_cell() if sleeping else player) - Vector2(0, 16)
+	for marker in layout.markers: marker.period = period
 	player_actor.rotation = PI * 0.5 if sleeping else 0.0
 	var player_sprite: AnimatedSprite2D = player_actor.get_node("AnimatedSprite2D")
 	player_sprite.play(("walk_" if moving else "idle_") + DIRECTIONS[facing])

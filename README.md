@@ -1,4 +1,4 @@
-# team-project · top_down_map
+# team-project · 맵 표시점 연결
 
 기능추가
 1. 자기 방에서 상하좌우 이동 가능
@@ -14,7 +14,9 @@ Godot 4.7 기반 탑다운 대화·녹음 프로토타입입니다. `feature/npc
 
 오전에는 오른쪽 책상 아래쪽의 휴대폰 근처에서 E → 편의점 알바 선택 → 편의점으로 이동하고 근무복으로 변경됩니다. 손님 세 명이 편의점 아래쪽에서 계산대·진열대·음료 냉장고로 이동합니다. 계산대 손님은 왼쪽 위 계산대 안쪽 계산원 자리에서, 나머지 손님은 옆 칸에서 E로 응대합니다. 응대할 수 있는 가장 가까운 손님이 밝게 표시됩니다.
 
-방과 편의점의 원본 타일 배치를 사용하며, 방에는 휴대폰과 시간대 창문, 편의점 오른쪽 아래에는 음료 냉장고를 보충합니다. 계산원 자리에서 진열대로 걸어 나갈 수 있도록 게임 실행 시 계산대 타일 한 칸을 출입구로 엽니다. 원본 맵 장면을 편집하는 대신 연결 화면에서 이 보충 요소를 적용하므로 원본 맵의 타일 데이터는 유지됩니다.
+맵 안의 **Gameplay 표시점**을 읽어 플레이어 등장, 침대·휴대폰 상호작용, 손님 등장·목적지·계산원 자리, 창문·냉장고 그림·충돌과 출입구를 자동 연결합니다. 가구 타일과 관련 표시점을 함께 옮겨 저장하면 코드 수정 없이 새 위치에 적용됩니다. 필수 표시점 누락이나 접근할 수 없는 배치는 게임 화면에서 오류로 안내합니다.
+
+맵 편집 방법과 표시점 목록은 [맵 편집 가이드](docs/맵_편집_가이드.md)에 정리했습니다. 다른 맵을 사용하려면 프로젝트 설정의 `gameplay/maps/room`, `gameplay/maps/store` 경로를 바꾸세요.
 
 NPC 머리 위 말풍선에 질문이 나타나며 화면 중간부터 아래에 답변 선택지가 나옵니다. 답변 선택 → 녹음 시작 → 녹음 종료 및 저장을 하면 손님의 답변 후 응대가 완료됩니다. 세 명 모두 응대하면 오후의 방으로 돌아옵니다. 오후에도 같은 일정을 수행하면 밤이 됩니다. 밤에는 침대 옆에서 E → 눕기 → 암전 → 다음 날 아침 침대 옆에서 시작합니다.
 
@@ -30,14 +32,17 @@ WAV 파일은 `user://recordings/<shift_id>/`에 저장하며, 선택 문장·�
 
 - `scripts/top_down_world.gd`: 이동, 충돌, 손님 경로 탐색, 상호작용, 녹음과 하루 진행.
 - `scripts/authored_map.gd`: 편집한 TileMap 장면·플레이어·NPC 인스턴스를 렌더링하고 타일 기반 충돌, 시간대와 응대 하이라이트를 연결합니다. 단독 맵 실행에서는 기존 이동 스크립트를 사용하고, 하루 진행 화면에서는 공통 컨트롤러가 이동과 상호작용을 담당합니다.
+- `scripts/gameplay_marker.gd`: Godot 인스펙터에서 역할·범위·거리를 지정하는 기능 표시점과 기본 그림입니다.
+- `scripts/map_layout.gd`: 맵의 표시점 자동 탐색, 좌표 변환, 충돌 및 접근성 검사입니다.
 - `scripts/top_down_map.gd`: 이전 도형 기반 맵 렌더러 보관본입니다.
-- `scripts/store_dialogues.gd`: 손님 세 명의 목적지와 한국어 대화 데이터.
+- `scripts/store_dialogues.gd`: 손님 세 명의 ID·외형과 한국어 대화 데이터. 위치는 맵 표시점에서 읽습니다.
 - `scripts/day_state.gd`: 기존 계정·일차 저장에 근무 진행 상태 추가.
 
 Godot 명령줄에서 다음 검사들을 실행할 수 있습니다. 테스트는 별도 테스트 계정으로 실행하며 마이크와 네트워크를 사용하지 않습니다. 실제 로그인 서버 인증과 실제 마이크 음질은 별도 환경에서 확인해야 합니다.
 
 ```text
 godot --headless --path . --rendering-method gl_compatibility --script res://tests/top_down_integration.gd
+godot --headless --path . --rendering-method gl_compatibility --script res://tests/map_markers.gd
 godot --path . --rendering-method gl_compatibility --script res://tests/capture_preview.gd
 ```
 
