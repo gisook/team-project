@@ -60,7 +60,8 @@ static func load_state() -> Dictionary:
 		"active_dialogue_id": active_id,
 		"schedule_start_id": str(state.get("schedule_start_id", "")),
 		"customers_done": state.get("customers_done", []) if state.get("customers_done", []) is Array else [],
-		"shift_id": str(state.get("shift_id", ""))
+		"shift_id": str(state.get("shift_id", "")),
+		"store_result": state.get("store_result", {}) if state.get("store_result", {}) is Dictionary else {}
 	}
 
 
@@ -137,6 +138,7 @@ static func start_store_shift() -> bool:
 	state["status"] = "store"
 	state["customers_done"] = []
 	state["shift_id"] = "%d_%d" % [int(Time.get_unix_time_from_system()), Time.get_ticks_usec()]
+	state["store_result"] = {}
 	return save_state(state)
 
 
@@ -148,4 +150,23 @@ static func complete_customer(id: String) -> bool:
 	if id not in completed:
 		completed.append(id)
 	state["customers_done"] = completed
+	return save_state(state)
+
+
+static func save_store_result(result: Dictionary) -> bool:
+	var state := load_state()
+	if state["status"] != "store": return false
+	state["store_result"] = result
+	return save_state(state)
+
+
+static func skip_store_schedule() -> bool:
+	var state := load_state()
+	if state["status"] != "store": return false
+	# Skipping advances the period without marking incomplete customers as served.
+	state["status"] = "room"
+	state["customers_done"] = []
+	state["active_dialogue_id"] = ""
+	state["schedule_start_id"] = ""
+	state["period"] = "afternoon" if state["period"] == "morning" else "night"
 	return save_state(state)

@@ -36,6 +36,17 @@ var retry_upload: Button
 var retry_save: Button
 var recorder: VoiceRecordUI
 var uploader: VoiceRecordUI
+var end_schedule_button: Button
+var continue_button: Button
+var result_panel: PanelContainer
+var submission_label: Label
+var score_label: Label
+var score_note: Label
+var retry_submission: Button
+var submission_phase := "playing"
+var submission_upload := false
+var current_responses: Array[Dictionary] = []
+var schedule_score: Variant = null
 
 
 func _ready() -> void:
@@ -165,14 +176,43 @@ func _build_ui() -> void:
 	uploader = _build_recorder(false)
 	uploader.file_uploaded.connect(_on_uploaded)
 	uploader.upload_finished.connect(_on_upload_finished)
+	uploader.upload_progress.connect(_on_submission_progress)
 	retry_save = _button("저장 다시 시도", _retry_progress_save)
 	add_child(retry_save)
 	retry_save.hide()
+	_build_schedule_ui()
 	fade = ColorRect.new()
 	fade.color = Color(0, 0, 0, 0)
 	fade.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	fade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	add_child(fade)
+
+
+func _build_schedule_ui() -> void:
+	end_schedule_button = _button("일정 종료", _finish_shift)
+	add_child(end_schedule_button)
+	continue_button = _button("넘어가기", _on_continue_pressed)
+	add_child(continue_button)
+	result_panel = _panel()
+	result_panel.size = Vector2(620, 330)
+	add_child(result_panel)
+	var box := VBoxContainer.new()
+	box.add_theme_constant_override("separation", 20)
+	result_panel.add_child(box)
+	box.add_child(_label("일정 결과", 28))
+	submission_label = _label("")
+	submission_label.custom_minimum_size.x = 560
+	submission_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	box.add_child(submission_label)
+	score_label = _label("점수: —", 42)
+	box.add_child(score_label)
+	score_note = _label("서버 응답을 기다리고 있습니다.", 16)
+	score_note.custom_minimum_size.x = 560
+	score_note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	box.add_child(score_note)
+	retry_submission = _button("전송 재시도", _finish_shift)
+	box.add_child(retry_submission)
+	result_panel.hide()
 
 
 func _layout() -> void:
@@ -192,6 +232,12 @@ func _layout() -> void:
 	recorder.record_button.size = Vector2(260, 44)
 	retry_save.position = Vector2(size.x * 0.5 - 120, size.y - 108)
 	retry_save.size = Vector2(240, 44)
+	end_schedule_button.position = Vector2(size.x - 320, 16)
+	end_schedule_button.size = Vector2(145, 44)
+	continue_button.position = Vector2(size.x - 164, 16)
+	continue_button.size = Vector2(140, 44)
+	result_panel.position = Vector2((size.x - 620) * 0.5, maxf(106, (size.y - 330) * 0.5))
+	result_panel.size = Vector2(620, 330)
 	_layout_bubble()
 
 
@@ -219,6 +265,10 @@ func _enter_location(next: String) -> void:
 	active_customer = -1
 	step_active = false
 	map.moving = false
+	result_panel.hide()
+	submission_phase = "playing"
+	current_responses.clear()
+	schedule_score = null
 	customers.clear()
 	if location == "store":
 		player_cell = map.layout.cell("player_spawn")
@@ -238,18 +288,38 @@ func _enter_location(next: String) -> void:
 	map.player = Vector2(player_cell)
 	map.customers = customers
 	_update_hud()
-	if location == "store" and _all_done(): _finish_shift.call_deferred()
+	if location == "store":
+		_restore_submission()
 
 
 func _update_hud() -> void:
 	var titles := {"morning": "오전", "afternoon": "오후", "night": "밤"}
 	heading.text = "%d일 차 · %s  |  %s" % [int(state["day"]), titles[state["period"]], "내 방" if location == "room" else "편의점 알바 · %d/3명 응대" % _completed_count()]
-	retry_upload.visible = not pending.is_empty() and active_customer < 0
+	retry_upload.visible = location == "room" and not pending.is_empty() and active_customer < 0
 	retry_upload.disabled = uploader.state == VoiceRecordUI.RecordState.UPLOADING
+	_update_schedule_buttons()
+
+
+func _capture_busy() -> bool:
+	return recorder.state in [VoiceRecordUI.RecordState.RECORDING, VoiceRecordUI.RecordState.SAVING]
+
+
+func _update_schedule_buttons() -> void:
+	var in_store := location == "store"
+	var uploading := uploader.state == VoiceRecordUI.RecordState.UPLOADING or submission_phase == "uploading"
+	end_schedule_button.visible = in_store
+	continue_button.visible = in_store
+	end_schedule_button.disabled = not _all_done() or active_customer >= 0 or uploading or submission_phase == "result" or retry_save.visible or transition
+	end_schedule_button.text = "전송 재시도" if submission_phase == "failed" else "일정 종료"
+	continue_button.disabled = uploading or _capture_busy() or retry_save.visible or transition
+	retry_submission.visible = submission_phase == "failed"
+	retry_submission.disabled = uploading or transition
 
 
 func _process(delta: float) -> void:
 	if transition: return
+	_update_schedule_buttons()
+	if result_panel.visible: return
 	if active_customer >= 0:
 		_layout_bubble()
 		return
@@ -274,7 +344,7 @@ func _unhandled_key_input(event: InputEvent) -> void:
 		elif active_customer >= 0 and selected_choice == -1: _close_dialogue()
 		get_viewport().set_input_as_handled()
 		return
-	if event.physical_keycode == KEY_E and active_customer == -1 and not phone.visible and not step_active:
+	if event.physical_keycode == KEY_E and active_customer == -1 and not phone.visible and not result_panel.visible and not step_active:
 		var target := _interaction_target()
 		if target == "phone": phone.show()
 		elif target == "bed": _sleep()
@@ -386,6 +456,7 @@ func _change_location(next: String) -> void:
 	reveal.tween_property(fade, "color:a", 0.0, 0.3)
 	await reveal.finished
 	transition = not map.layout_errors.is_empty()
+	_update_schedule_buttons()
 
 
 func _start_dialogue(index: int) -> void:
@@ -447,17 +518,21 @@ func _retry_progress_save() -> void:
 		_finish_conversation()
 	elif location == "store" and _all_done():
 		retry_save.hide()
-		_finish_shift()
+		_on_shift_ready()
 
 
 func _finish_conversation() -> void:
 	conversation_finishing = true
+	var expected_shift: String = state.get("shift_id", "")
+	var expected_customer := active_customer
 	customers[active_customer]["done"] = true
 	bubble_text.text = "%s\n%s" % [customers[active_customer]["name"], customers[active_customer]["reply"]]
 	response.text = "녹음 저장 완료 · 응대를 마쳤습니다."
 	await get_tree().create_timer(1.6).timeout
+	if location != "store" or state.get("shift_id", "") != expected_shift or active_customer != expected_customer:
+		return
 	_close_dialogue()
-	if _all_done(): _finish_shift()
+	if _all_done(): _on_shift_ready()
 
 
 func _close_dialogue() -> void:
@@ -481,14 +556,119 @@ func _all_done() -> bool:
 	return customers.size() == 3 and _completed_count() == 3
 
 
+func _on_shift_ready() -> void:
+	if submission_phase == "playing": submission_phase = "ready"
+	feedback.text = "모든 응대를 마쳤습니다. [일정 종료]를 눌러 녹음을 전송하세요."
+	hint.text = "일정 종료 · 서버 전송 및 결과 확인   |   넘어가기 · 자취방으로 귀가"
+	_update_hud()
+
+
+func _restore_submission() -> void:
+	var saved: Dictionary = state.get("store_result", {})
+	var responses: Variant = saved.get("responses", [])
+	if responses is Array:
+		for entry in responses:
+			if entry is Dictionary: current_responses.append(entry)
+	schedule_score = saved.get("score")
+	if _all_done():
+		if saved.get("received", false): _show_schedule_result()
+		else: _on_shift_ready()
+
+
+func _persist_submission(received: bool) -> bool:
+	return DayState.save_store_result({"received": received, "responses": current_responses, "score": schedule_score})
+
+
+func _current_shift_pending() -> Array[Dictionary]:
+	var entries: Array[Dictionary] = []
+	for entry in pending:
+		if entry.get("shift_id", "") == state.get("shift_id", ""):
+			entries.append(entry)
+	return entries
+
+
+func _send_recordings(entries: Array[Dictionary]) -> bool:
+	return uploader.upload_recordings(entries)
+
+
 func _finish_shift() -> void:
-	if not DayState.finish_schedule():
-		feedback.text = "근무 완료 상태 저장에 실패했습니다. 저장을 다시 시도해 주세요."
-		retry_save.show()
+	if location != "store" or not _all_done() or active_customer >= 0 or transition or retry_save.visible:
 		return
-	feedback.text = "근무를 마치고 내 방으로 돌아왔습니다."
+	if submission_phase in ["uploading", "result"] or uploader.state == VoiceRecordUI.RecordState.UPLOADING:
+		return
+	var entries := _current_shift_pending()
+	result_panel.show()
+	if entries.is_empty():
+		if current_responses.size() == customers.size():
+			if _persist_submission(true): _show_schedule_result()
+			else: _submission_failed("응답 결과 저장에 실패했습니다. 다시 시도해 주세요.")
+		else:
+			_submission_failed("이번 일정에서 전송할 녹음을 찾지 못했습니다. [넘어가기]로 귀가할 수 있습니다.")
+		return
+	submission_phase = "uploading"
+	submission_upload = true
+	submission_label.text = "녹음을 메인 서버로 전송하고 응답을 기다리고 있습니다."
+	score_label.text = "점수: —"
+	score_note.text = "응답을 받을 때까지 잠시 기다려 주세요."
+	feedback.text = "파일 전송 및 서버 응답 대기 중…"
+	_update_schedule_buttons()
+	if not _send_recordings(entries):
+		submission_upload = false
+		_submission_failed("전송을 시작하지 못했습니다. 잠시 후 다시 시도해 주세요.")
+
+
+func _on_submission_progress(completed: int, total: int) -> void:
+	if submission_upload:
+		submission_label.text = "녹음 %d/%d개 전송 및 응답 확인 완료" % [completed, total]
+
+
+func _submission_failed(message: String) -> void:
+	submission_phase = "failed"
+	result_panel.show()
+	submission_label.text = message
+	score_label.text = "점수: —"
+	score_note.text = "미전송 파일은 보관 중입니다. 전송을 재시도하거나 [넘어가기]로 귀가할 수 있습니다."
+	feedback.text = "서버 응답을 확인하지 못했습니다."
+	_update_schedule_buttons()
+
+
+func _show_schedule_result() -> void:
+	submission_phase = "result"
+	result_panel.show()
+	submission_label.text = "모든 녹음에 대한 서버 응답을 받았습니다."
+	if schedule_score is int or schedule_score is float:
+		score_label.text = "점수: %s점" % str(schedule_score)
+		score_note.text = "결과 확인 후 [넘어가기]를 누르면 자취방으로 돌아갑니다."
+	else:
+		score_label.text = "점수: 0점"
+		score_note.text = "임시 표시 · 서버 응답 기반 점수 연동 전입니다.\n[넘어가기]를 누르면 자취방으로 돌아갑니다."
+	feedback.text = "일정 결과를 확인해 주세요."
+	_update_schedule_buttons()
+
+
+# Future response parsing can call this without changing the score screen.
+func set_schedule_score(value: float) -> bool:
+	if location != "store" or submission_phase != "result" or not is_finite(value): return false
+	schedule_score = value
+	var saved := _persist_submission(true)
+	_show_schedule_result()
+	if not saved: feedback.text = "점수는 표시했지만 저장하지 못했습니다."
+	return saved
+
+
+func _on_continue_pressed() -> void:
+	if location != "store" or transition or _capture_busy() or retry_save.visible:
+		return
+	if submission_phase == "uploading" or uploader.state == VoiceRecordUI.RecordState.UPLOADING:
+		return
+	var saved := DayState.finish_schedule() if submission_phase == "result" else DayState.skip_store_schedule()
+	if not saved:
+		feedback.text = "귀가 상태를 저장하지 못했습니다. [넘어가기]를 다시 눌러 주세요."
+		return
+	_close_dialogue()
+	result_panel.hide()
+	feedback.text = "자취방으로 돌아왔습니다."
 	_change_location("room")
-	_upload_pending()
 
 
 func _sleep() -> void:
@@ -539,8 +719,22 @@ func _on_uploaded(path: String, _response_text: String) -> void:
 	for i in range(pending.size() - 1, -1, -1):
 		if pending[i].get("path") == path: pending.remove_at(i)
 	if not _save_pending(): feedback.text = "전송은 완료했지만 전송 목록을 저장하지 못했습니다."
+	if submission_upload:
+		var exists := false
+		for entry in current_responses:
+			if entry.get("path") == path: exists = true
+		if not exists: current_responses.append({"path": path, "response": _response_text})
+		if not _persist_submission(false): feedback.text = "서버 응답을 저장하지 못했습니다."
 
 
 func _on_upload_finished(success: bool, _text: String) -> void:
+	if submission_upload:
+		submission_upload = false
+		if success:
+			if _persist_submission(true): _show_schedule_result()
+			else: _submission_failed("서버 응답은 받았지만 결과 저장에 실패했습니다. 전송 재시도로 저장을 다시 시도해 주세요.")
+		else:
+			_submission_failed("서버 연결 또는 응답 확인에 실패했습니다.")
+		return
 	feedback.text = "녹음 전송 완료" if success else "서버 연결 실패 · 녹음은 보관 중입니다. [미전송 녹음 전송]으로 재시도할 수 있습니다."
 	_update_hud()

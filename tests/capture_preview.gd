@@ -34,6 +34,19 @@ func _run() -> void:
 	world._choose(0)
 	await _capture("res://artifacts/recording_ready.png")
 	world._close_dialogue()
+	for customer in world.customers:
+		customer["done"] = true
+		DayState.complete_customer(customer["id"])
+		world.pending.append({"path": "user://preview_%s.wav" % customer["id"], "shift_id": world.state["shift_id"]})
+	world._on_shift_ready()
+	await _capture("res://artifacts/schedule_ready.png")
+	world._finish_shift()
+	await _capture("res://artifacts/schedule_waiting.png")
+	world.complete_test_upload()
+	await _capture("res://artifacts/schedule_result.png")
+	world.set_schedule_score(85)
+	await _capture("res://artifacts/schedule_score.png")
+	world.result_panel.hide()
 	var state := DayState.load_state()
 	state["status"] = "room"
 	state["period"] = "night"

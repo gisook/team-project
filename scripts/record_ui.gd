@@ -9,7 +9,7 @@ signal upload_progress(completed_count: int, total_count: int)
 signal upload_finished(success: bool, response_text: String)
 
 # 기존 서버는 WAV 파일 1개를 multipart/form-data의 file 필드로 받습니다.
-# 녹음은 각 대화에서 로컬 파일로 저장하고, 마지막 대화에서 이 API로 순차 전송합니다.
+# 녹음은 각 대화에서 로컬 파일로 저장하고, 호출부의 전송 요청 시 이 API로 순차 전송합니다.
 const SERVER_URL := "http://121.188.96.177:8000/upload"
 
 enum RecordState { IDLE, READY, RECORDING, SAVING, UPLOADING }
@@ -22,6 +22,7 @@ var record_effect: AudioEffectRecord
 var state: RecordState = RecordState.IDLE
 var save_path: String = ""
 var capture_enabled: bool = true
+var upload_url: String = SERVER_URL
 
 var upload_queue: Array[Dictionary] = []
 var upload_index: int = 0
@@ -201,7 +202,7 @@ func _upload_next() -> void:
 		"Content-Type: multipart/form-data; boundary=%s" % boundary
 	])
 	var request_error: Error = http_request.request_raw(
-		SERVER_URL, headers, HTTPClient.METHOD_POST, body
+		upload_url, headers, HTTPClient.METHOD_POST, body
 	)
 	if request_error != OK:
 		_fail_upload("업로드 요청 실패 (오류 %d): %s" % [request_error, filename])
