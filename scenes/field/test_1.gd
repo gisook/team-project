@@ -64,7 +64,8 @@ func _on_all_requests_done() -> void:
 	Record.session_records.clear()
 	Record.record_counter = 0
 
-	_go_next_scene()
+	load("res://scenes/field/print_score.gd").set_results(results)
+	get_tree().change_scene_to_file("res://scenes/field/print_score.tscn")
 
 
 func _go_next_scene() -> void:
