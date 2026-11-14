@@ -1,0 +1,6 @@
+[gd_scene format=3 uid="uid://lvsrmron2rrl"]
+
+[node name="ChoiceButton" type="Button" unique_id=229683529]
+custom_minimum_size = Vector2(500, 50)
+size_flags_horizontal = 4
+text = "선택지 1"

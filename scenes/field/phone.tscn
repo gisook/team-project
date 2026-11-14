@@ -1,0 +1,62 @@
+[gd_scene format=3 uid="uid://c4br3r26opem2"]
+
+[ext_resource type="Script" uid="uid://lkbsobmjxmp2" path="res://scenes/field/phone.gd" id="1_33csu"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_fq62y"]
+bg_color = Color(0.11764706, 0.11764706, 0.11764706, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+corner_radius_top_left = 20
+corner_radius_top_right = 20
+corner_radius_bottom_right = 20
+corner_radius_bottom_left = 20
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_33csu"]
+bg_color = Color(0.17254902, 0.17254902, 0.17254902, 1)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_xn75y"]
+bg_color = Color(0.20392157, 0.47058824, 0.7764706, 1)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_ctyum"]
+bg_color = Color(0.22745098, 0.22745098, 0.22745098, 1)
+
+[node name="CanvasLayer" type="CanvasLayer" unique_id=2085269762]
+script = ExtResource("1_33csu")
+
+[node name="Panel" type="Panel" parent="." unique_id=1575734983]
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -100.0
+offset_top = -200.0
+offset_right = 100.0
+offset_bottom = 200.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_fq62y")
+
+[node name="VBoxContainer" type="VBoxContainer" parent="Panel" unique_id=1716661802]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 20.0
+offset_top = 20.0
+offset_right = -20.0
+offset_bottom = -17.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 2
+
+[node name="todoButton" type="Button" parent="Panel/VBoxContainer" unique_id=449158589]
+layout_mode = 2
+theme_override_font_sizes/font_size = 12
+theme_override_styles/normal = SubResource("StyleBoxFlat_33csu")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_xn75y")
+theme_override_styles/hover = SubResource("StyleBoxFlat_ctyum")
+text = "편의점 알바"
+alignment = 0
