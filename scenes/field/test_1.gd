@@ -1,5 +1,8 @@
 extends Node2D
 
+const ScorePresenter = preload("res://scripts/scores/score_presenter.gd")
+var score_presenter: Node
+
 const SERVER_URL = "http://127.0.0.1:8000/api/pronunciation/assess"  # 실기기 테스트 시 PC의 IP로 변경
 const NEXT_SCENE = "res://scenes/field/myroom.tscn"
 
@@ -10,6 +13,9 @@ var results: Array = []         # 받은 평가 결과 모음
 @onready var send_button = get_node_or_null("Button")          # 선택: 중복 클릭 방지용
 
 func _ready() -> void:
+	score_presenter = ScorePresenter.new()
+	score_presenter.process_mode = Node.PROCESS_MODE_ALWAYS
+	add_child(score_presenter)
 	if loading_label:
 		loading_label.visible = false
 
@@ -27,6 +33,7 @@ func _on_button_pressed() -> void:
 	_set_loading(true)
 	pending_count = records.size()
 	results.clear()
+	score_presenter._on_upload_started()
 
 	for record_data in records:
 		send_audio_to_server(record_data)
@@ -42,14 +49,9 @@ func _set_loading(is_loading: bool) -> void:
 
 # 요청 하나가 끝날 때마다 호출됨. 결과가 없으면 res는 null
 func _on_one_request_done(res, file_name: String) -> void:
-	if res != null:
-		results.append({"file": file_name, "result": res})
-		print("[", file_name, "] 정확도: ", res["accuracy_score"],
-			" / 유창성: ", res["fluency_score"],
-			" / 완전성: ", res["completeness_score"],
-			" / 종합: ", res["pron_score"])
-	else:
-		print("[", file_name, "] 평가 실패")
+	if pending_count <= 0: return
+	score_presenter._on_one_request_done(res, file_name)
+	results = score_presenter.results.duplicate(true)
 
 	pending_count -= 1
 	if pending_count <= 0:
@@ -64,6 +66,10 @@ func _on_all_requests_done() -> void:
 	Record.session_records.clear()
 	Record.record_counter = 0
 
+	# 평가가 모두 끝나면 결과를 확인한 뒤 기존 귀가 경로로 돌아갑니다.
+	process_mode = Node.PROCESS_MODE_DISABLED
+	score_presenter.show_results()
+	await score_presenter.screen.closed
 	_go_next_scene()
 
 

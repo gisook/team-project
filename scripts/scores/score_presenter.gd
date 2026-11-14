@@ -1,5 +1,5 @@
 extends Node
-## 업로드 이벤트를 결과 데이터와 독립 화면에 연결합니다.
+## 편의점 평가 콜백을 결과 데이터와 독립 화면에 연결합니다.
 
 const Screen = preload("res://scenes/scores/print_score_scene.tscn")
 const ScoreResult = preload("res://scripts/scores/score_result.gd")
@@ -13,12 +13,6 @@ func _ready() -> void:
 	screen = Screen.instantiate()
 	add_child(screen)
 	screen.close()
-
-
-func bind_uploader(uploader: VoiceRecordUI) -> void:
-	uploader.upload_started.connect(_on_upload_started)
-	uploader.evaluation_received.connect(_on_one_request_done)
-	uploader.upload_finished.connect(_on_upload_finished)
 
 
 func _on_upload_started() -> void:

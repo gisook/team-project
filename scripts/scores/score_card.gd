@@ -9,7 +9,7 @@ func set_result(entry: Dictionary) -> void:
 	$Content/FileName.tooltip_text = str(entry.get("file", ""))
 	var result: Variant = entry.get("result")
 	var valid := ScoreResult.is_valid(result)
-	$Content/Status.text = "평가 완료" if valid else "평가 실패 · 녹음을 보관했습니다. 다시 전송해 주세요."
+	$Content/Status.text = "평가 완료" if valid else "평가 실패 · 점수를 받지 못했습니다."
 	for child in $Content/Metrics.get_children():
 		child.free()
 	for key in ScoreResult.FIELDS:
