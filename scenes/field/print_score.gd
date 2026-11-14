@@ -13,6 +13,11 @@ static func set_results(values: Array) -> void:
 func _ready() -> void:
 	show_results(_pending_results)
 	_pending_results = []
+	$MarginContainer/VBoxContainer/ConfirmButton.grab_focus()
+
+
+func _on_confirm_button_pressed() -> void:
+	get_tree().change_scene_to_file("res://scenes/field/myroom.tscn")
 
 
 func show_results(values: Array) -> void:
