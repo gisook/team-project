@@ -4,6 +4,7 @@ const DayState = preload("res://scripts/day_state.gd")
 const MapView = preload("res://scripts/authored_map.gd")
 const StoreDialogues = preload("res://scripts/store_dialogues.gd")
 const RecordUI = preload("res://scripts/record_ui.gd")
+const ScorePresenter = preload("res://scripts/scores/score_presenter.gd")
 const DIRECTIONS := [Vector2i.RIGHT, Vector2i.UP, Vector2i.LEFT, Vector2i.DOWN]
 const BED := Rect2i(2, 2, 3, 3)
 const ROOM_SPAWN := Vector2i(5, 3)
@@ -40,6 +41,8 @@ var retry_upload: Button
 var retry_save: Button
 var recorder: VoiceRecordUI
 var uploader: VoiceRecordUI
+var score_presenter: Node
+var score_button: Button
 
 
 func _ready() -> void:
@@ -167,6 +170,12 @@ func _build_ui() -> void:
 	recorder.recording_started.connect(func() -> void: response.text = "녹음 중 · 답변을 말하고 종료 버튼을 누르세요.")
 	recorder.recording_failed.connect(func(message: String) -> void: response.text = message)
 	uploader = _build_recorder(false)
+	score_presenter = ScorePresenter.new()
+	score_presenter.auto_show = false
+	add_child(score_presenter)
+	score_presenter.bind_uploader(uploader)
+	score_button = _button("평가 결과 보기", score_presenter.show_results)
+	add_child(score_button)
 	uploader.file_uploaded.connect(_on_uploaded)
 	uploader.upload_finished.connect(_on_upload_finished)
 	retry_save = _button("저장 다시 시도", _retry_progress_save)
@@ -188,6 +197,8 @@ func _layout() -> void:
 	feedback.size = Vector2(size.x - 250, 45)
 	retry_upload.position = Vector2(size.x - 212, 16)
 	retry_upload.size = Vector2(190, 40)
+	score_button.position = Vector2(size.x - 212, 64)
+	score_button.size = Vector2(190, 40)
 	phone.position = Vector2((size.x - 440) * 0.5, maxf(95, (size.y - 330) * 0.5))
 	phone.size = Vector2(440, 300)
 	dialogue.position = Vector2(maxf(16, (size.x - 780) * 0.5), size.y * 0.51)
@@ -248,6 +259,10 @@ func _update_hud() -> void:
 
 
 func _process(delta: float) -> void:
+	if score_presenter.screen.is_open: return
+	if score_presenter.pending_display and active_customer < 0 and not transition:
+		score_presenter.show_results()
+		return
 	if transition: return
 	if active_customer >= 0:
 		_layout_bubble()
@@ -267,6 +282,7 @@ func _process(delta: float) -> void:
 
 
 func _unhandled_key_input(event: InputEvent) -> void:
+	if score_presenter.screen.is_open: return
 	if not (event is InputEventKey) or not event.pressed or event.echo or transition: return
 	if event.physical_keycode == KEY_ESCAPE:
 		if phone.visible: phone.hide()

@@ -206,7 +206,8 @@ func _process(_delta: float) -> void:
 		sprite.play(("walk_" if c["moving"] and focused_customer < 0 else "idle_") + DIRECTIONS[int(c["facing"])])
 		if i == highlighted_customer and focused_customer < 0: actor.highlight()
 		else: actor.unhighlight()
-		actor.get_node("Label").hide()
+		var legacy_bubble := actor.get_node_or_null("Label") as CanvasItem
+		if legacy_bubble != null: legacy_bubble.hide()
 	decorations.queue_redraw()
 
 

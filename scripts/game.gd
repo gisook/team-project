@@ -2,6 +2,9 @@ extends Node2D
 
 const DayState = preload("res://scripts/day_state.gd")
 const DialogueCatalog = preload("res://scripts/dialogue_catalog.gd")
+const ScorePresenter = preload("res://scripts/scores/score_presenter.gd")
+
+var score_presenter: Node
 
 signal choice_selected(index: int, text: String)
 
@@ -80,6 +83,9 @@ func _ready() -> void:
 		canvas_layer.add_child(home_button)
 
 	record_ui.recording_saved.connect(_on_recording_saved)
+	score_presenter = ScorePresenter.new()
+	add_child(score_presenter)
+	score_presenter.bind_uploader(record_ui)
 	record_ui.file_uploaded.connect(_on_file_uploaded)
 	record_ui.upload_progress.connect(_on_upload_progress)
 	record_ui.upload_finished.connect(_on_upload_finished)
@@ -503,6 +509,8 @@ func _complete_daily_schedule(show_result: bool = false) -> void:
 
 
 func _return_after_feedback() -> void:
+	if score_presenter.screen.is_open:
+		await score_presenter.screen.closed
 	await get_tree().create_timer(FINISH_DELAY).timeout
 	if is_inside_tree():
 		get_tree().change_scene_to_file(DayState.ROOM_SCENE)

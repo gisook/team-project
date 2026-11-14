@@ -1,7 +1,7 @@
 extends SceneTree
 
 const DayState = preload("res://scripts/day_state.gd")
-const TestWorld = preload("res://tests/test_world.gd")
+var TestWorld: GDScript
 var world: Control
 var failures := 0
 
@@ -19,6 +19,8 @@ func check(value: bool, message: String) -> void:
 
 
 func _run() -> void:
+	# 맵의 NPC 스크립트가 참조하는 오토로드가 준비된 뒤 불러옵니다.
+	TestWorld = load("res://tests/test_world.gd")
 	var account := preload("res://tests/account_fixture.gd").new()
 	DayState.set_account("top_down_integration_%d" % Time.get_ticks_usec())
 	check(DayState.save_state(DayState.default_state()), "isolated account save")
@@ -28,6 +30,10 @@ func _run() -> void:
 	await process_frame
 	world.set_process(false)
 	check(world.location == "room" and world.player_cell == Vector2i(5, 3), "start beside bed in authored room")
+	world.score_presenter.show_results()
+	world._process(0.2)
+	check(world.score_presenter.screen.is_open and world.player_cell == Vector2i(5, 3), "score modal preserves world state")
+	world.score_presenter.screen.close()
 	check(world.map.field.scene_file_path == "res://scenes/field/myroom.tscn", "uploaded room scene is the playable map")
 	check(world._blocked(Vector2i(-1, 0)) and world._blocked(Vector2i(15, 15)), "authored floor bounds")
 	check(world._blocked(Vector2i(3, 3)) and world._blocked(Vector2i(11, 3)), "authored bed and desk collision")
@@ -96,7 +102,7 @@ func _run() -> void:
 		check(world.location == "room", "all three responses return home")
 		check(world.state["period"] == ("afternoon" if shift == 0 else "night"), "time advances one period")
 	check(world.pending.size() == 6 and world.upload_attempts == 2, "six queued WAVs and background upload per shift")
-	var restored := TestWorld.new()
+	var restored: Control = TestWorld.new()
 	root.add_child(restored)
 	restored.set_process(false)
 	check(restored.pending.size() == 6, "persisted recording queue readable after reopening")

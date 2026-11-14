@@ -1,5 +1,45 @@
 # team-project · top_down_map
 
+## 결과 출력 화면씬 제작 및 연결 · print_score_scene
+
+`feature/npc-interaction` 기준의 결과 화면입니다. 녹음 업로드 응답의
+`accuracy_score`(정확도), `fluency_score`(유창성),
+`completeness_score`(완전성), `pron_score`(종합)을 파일별로 표시합니다.
+서버가 반환한 종합 점수를 그대로 사용하며 점수는 소수 둘째 자리까지 표시합니다.
+응답은 이 네 필드를 포함하는 JSON 객체여야 합니다. 중첩된 응답을 사용하는 서버라면
+`score_result.gd`의 `from_response()`에서 응답 구조를 변환하세요.
+
+- `scripts/scores/score_result.gd`: JSON 검증, 필드 이름, 숫자 표시 형식.
+- `scripts/scores/score_presenter.gd`: 업로드 시그널 구독, `_on_one_request_done(res, file_name)` 수집과 콘솔 출력, 화면 연결.
+- `scenes/scores/print_score_scene.tscn` + `scripts/scores/score_screen.gd`: 스크롤 가능한 전체 결과 화면, 요약, 닫기와 Esc 처리.
+- `scenes/scores/score_card.tscn` + `scripts/scores/score_card.gd`: 파일별 결과 카드와 평가 실패 안내.
+- `scenes/scores/score_metric.tscn` + `scripts/scores/score_metric.gd`: 재사용 가능한 점수 한 항목.
+
+탑다운 화면은 업로드 종료 후 대화·장소 전환이 끝나면 결과를 자동 표시합니다.
+상단 **평가 결과 보기**로 가장 최근 전송 결과를 다시 볼 수 있습니다.
+결과를 확인하는 동안 이동·상호작용을 막고 닫으면 같은 위치에서 이어갑니다.
+기존 대화 화면도 같은 결과 화면을 사용하며, 일정을 마쳤을 때는 결과 창을 닫은 뒤 방으로 돌아갑니다.
+빈 결과, 실제 0점, 부분 성공·실패를 구별합니다. 통신 실패나 잘못된 점수 응답은
+평가 실패로 표시하고 해당 WAV를 미전송 목록에 보관해 기존 전송 버튼으로 재시도합니다.
+실패 이후 아직 요청하지 않은 파일은 결과 카드에서 제외합니다.
+결과는 현재 화면의 메모리에 유지하며 새 전송을 시작하면 초기화합니다.
+
+다른 평가 요청 코드에서도 `ScorePresenter`를 노드로 추가한 뒤
+`_on_one_request_done(res, file_name)`으로 전달하고 `show_results()`로 표시할 수 있습니다.
+`print_score_scene.tscn`은 에디터에서 독립 실행하면 빈 결과 화면을 확인할 수 있습니다.
+
+검증 명령 (마이크·네트워크 없이 응답 데이터로 검사):
+
+```text
+godot --headless --path . --rendering-method gl_compatibility --script res://tests/score_integration.gd
+godot --headless --path . --rendering-method gl_compatibility --script res://tests/top_down_integration.gd
+godot --path . --rendering-method gl_compatibility --script res://tests/score_integration.gd -- --preview
+```
+
+마지막 명령은 `artifacts/` 폴더가 있을 때 결과 화면 PNG를 저장합니다.
+점수 검증 테스트의 잘못된 응답 사례에서 나오는 평가 실패 로그는 의도된 출력입니다.
+실제 서버 응답 형식과 실제 마이크 녹음은 별도 실행 환경에서 확인해야 합니다.
+
 기능추가
 1. 자기 방에서 상하좌우 이동 가능
 2. 일정을 수행할 장소에서 이동 가능

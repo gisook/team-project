@@ -7,6 +7,10 @@ signal recording_failed(message: String)
 signal file_uploaded(file_path: String, response_text: String)
 signal upload_progress(completed_count: int, total_count: int)
 signal upload_finished(success: bool, response_text: String)
+signal upload_started
+signal evaluation_received(res: Variant, file_name: String)
+
+const ScoreResult = preload("res://scripts/scores/score_result.gd")
 
 # 기존 서버는 WAV 파일 1개를 multipart/form-data의 file 필드로 받습니다.
 # 녹음은 각 대화에서 로컬 파일로 저장하고, 마지막 대화에서 이 API로 순차 전송합니다.
@@ -162,6 +166,7 @@ func upload_recordings(recordings: Array[Dictionary]) -> bool:
 	state = RecordState.UPLOADING
 	record_button.hide()
 	record_button.disabled = true
+	upload_started.emit()
 	_upload_next()
 	return true
 
@@ -225,6 +230,11 @@ func _on_upload_completed(
 		])
 		return
 
+	var evaluation: Variant = ScoreResult.from_response(response_text)
+	if evaluation == null:
+		_fail_upload("평가 결과 형식이 올바르지 않습니다: " + path.get_file())
+		return
+	evaluation_received.emit(evaluation, path)
 	upload_responses.append("%d. %s: %s" % [
 		upload_index + 1, path.get_file(), response_text.substr(0, 350)
 	])
@@ -247,5 +257,7 @@ func _fail_recording(message: String) -> void:
 
 func _fail_upload(message: String) -> void:
 	push_error(message)
+	if upload_index < upload_queue.size():
+		evaluation_received.emit(null, str(upload_queue[upload_index].get("path", "")))
 	state = RecordState.IDLE
 	upload_finished.emit(false, message)
