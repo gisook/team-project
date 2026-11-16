@@ -1,8 +1,8 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene format=3 uid="uid://dki0cifjwa51"]
 
-[ext_resource type="Script" path="res://scenes/field/print_score.gd" id="1_script"]
+[ext_resource type="Script" uid="uid://87semyv56ggo" path="res://scenes/field/print_score.gd" id="1_script"]
 
-[node name="PrintScore" type="Control"]
+[node name="PrintScore" type="Control" unique_id=1405292927]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -11,7 +11,7 @@ grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_script")
 
-[node name="Background" type="ColorRect" parent="."]
+[node name="Background" type="ColorRect" parent="." unique_id=2069700425]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -21,7 +21,7 @@ grow_vertical = 2
 mouse_filter = 2
 color = Color(0.08, 0.09, 0.12, 1)
 
-[node name="MarginContainer" type="MarginContainer" parent="."]
+[node name="MarginContainer" type="MarginContainer" parent="." unique_id=701704219]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -33,27 +33,27 @@ theme_override_constants/margin_top = 32
 theme_override_constants/margin_right = 40
 theme_override_constants/margin_bottom = 32
 
-[node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer"]
+[node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer" unique_id=324140767]
 layout_mode = 2
 theme_override_constants/separation = 24
 
-[node name="Title" type="Label" parent="MarginContainer/VBoxContainer"]
+[node name="Title" type="Label" parent="MarginContainer/VBoxContainer" unique_id=1023278994]
 layout_mode = 2
 theme_override_font_sizes/font_size = 32
 text = "평가 결과"
 horizontal_alignment = 1
 
-[node name="ScrollContainer" type="ScrollContainer" parent="MarginContainer/VBoxContainer"]
+[node name="ScrollContainer" type="ScrollContainer" parent="MarginContainer/VBoxContainer" unique_id=860199283]
 layout_mode = 2
 size_flags_vertical = 3
 horizontal_scroll_mode = 0
 
-[node name="ResultsList" type="VBoxContainer" parent="MarginContainer/VBoxContainer/ScrollContainer"]
+[node name="ResultsList" type="VBoxContainer" parent="MarginContainer/VBoxContainer/ScrollContainer" unique_id=953355916]
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_constants/separation = 32
 
-[node name="ConfirmButton" type="Button" parent="MarginContainer/VBoxContainer"]
+[node name="ConfirmButton" type="Button" parent="MarginContainer/VBoxContainer" unique_id=1247257676]
 custom_minimum_size = Vector2(180, 48)
 layout_mode = 2
 size_flags_horizontal = 4

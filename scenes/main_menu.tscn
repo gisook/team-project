@@ -49,6 +49,8 @@ script = ExtResource("4_wu84c")
 quit_dialog = NodePath("../../QuitConfirmDialog")
 
 [node name="QuitConfirmDialog" type="ConfirmationDialog" parent="." unique_id=1841210575]
+oversampling_override = 1.0
+size = Vector2i(256, 100)
 ok_button_text = "예"
 dialog_text = "정말로 게임을 종료하시겠습니까?"
 cancel_button_text = "아니요"
