@@ -1,7 +1,7 @@
 [gd_scene format=4 uid="uid://c63osdvaw2r0h"]
 
 [ext_resource type="Texture2D" uid="uid://buhcv4do0o534" path="res://image/Interiors_free/16x16/Interiors_free_16x16.png" id="1_0320c"]
-[ext_resource type="Script" uid="uid://cxhbpggyfvxji" path="res://scenes/field/test_1.gd" id="1_bm81j"]
+[ext_resource type="Script" uid="uid://cb1yklu7iijgp" path="res://scenes/field/test_1.gd" id="1_bm81j"]
 [ext_resource type="Texture2D" uid="uid://dikful3bhpyji" path="res://image/Interiors_free/16x16/Room_Builder_free_16x16.png" id="2_fdsmj"]
 [ext_resource type="PackedScene" uid="uid://te0sei2euqjf" path="res://scenes/character/maincharacter/maincharacter.tscn" id="3_bm81j"]
 [ext_resource type="PackedScene" uid="uid://d0qn0kxd6kge5" path="res://scenes/character/npc/npc1.tscn" id="4_fdsmj"]
@@ -2734,6 +2734,7 @@ tile_map_data = PackedByteArray("AAABAAQAAAAGAAcAAAACAAQAAAABAAgAAAADAAQAAAADAAk
 tile_set = SubResource("TileSet_13qdw")
 
 [node name="Maincharacter" parent="." unique_id=345337222 instance=ExtResource("3_bm81j")]
+z_index = 1
 position = Vector2(137, 149)
 
 [node name="Camera2D" type="Camera2D" parent="." unique_id=606099370]

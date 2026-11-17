@@ -61,8 +61,43 @@ func update_closest_npc():
 		if current_target_npc != null:
 			current_target_npc.highlight()
 
-func _unhandled_input(event):
-	if event.is_action_pressed("interaction"):
-		# [수정됨] 이제 매번 새로 찾을 필요 없이, 이미 불이 켜져 있는(타겟팅 된) NPC와 바로 상호작용합니다.
-		if current_target_npc != null:
-			current_target_npc.interact()
+func _unhandled_input(event: InputEvent) -> void:
+	if not event.is_action_pressed("interaction"):
+		return
+
+	if event.is_echo():
+		return
+
+	var furniture := find_closest_furniture()
+
+	if furniture != null:
+		get_viewport().set_input_as_handled()
+		furniture.act()
+		return
+
+	if is_instance_valid(current_target_npc):
+		get_viewport().set_input_as_handled()
+		current_target_npc.interact()
+
+func find_closest_furniture() -> ActFurniture:
+	var closest: ActFurniture = null
+	var closest_distance := INF
+
+	for node in get_tree().get_nodes_in_group("act_furniture"):
+		var furniture := node as ActFurniture
+
+		if furniture == null:
+			continue
+
+		if not furniture.can_interact(self):
+			continue
+
+		var distance := global_position.distance_squared_to(
+			furniture.global_position
+		)
+
+		if distance < closest_distance:
+			closest_distance = distance
+			closest = furniture
+
+	return closest

@@ -383,7 +383,7 @@ animations = [{
 }]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_xrivr"]
-size = Vector2(16, 1)
+size = Vector2(16, 4)
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_xrivr"]
 radius = 41.01219
@@ -396,7 +396,8 @@ sprite_frames = SubResource("SpriteFrames_xrivr")
 animation = &"walk_down"
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="." unique_id=54681618]
-position = Vector2(0, 14.5)
+z_index = 1
+position = Vector2(0, 13)
 shape = SubResource("RectangleShape2D_xrivr")
 
 [node name="InteractArea" type="Area2D" parent="." unique_id=680651799]
