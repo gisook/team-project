@@ -24,6 +24,9 @@ var failed_records: Array = []
 var upload_started: bool = false
 var all_requests_finished: bool = false
 
+# 씬 전환 중복 요청을 막습니다.
+var scene_transitioning: bool = false
+
 var loading_label: Label = null
 
 
@@ -79,7 +82,7 @@ func _start_upload() -> void:
 
 	if records.is_empty():
 		print("[Loading] 전송할 녹음 데이터가 없습니다.")
-		_go_next_scene()
+		call_deferred("_change_scene", NEXT_SCENE)
 		return
 
 	results.clear()
@@ -537,40 +540,36 @@ func _on_all_requests_done() -> void:
 		]
 
 	# 마지막 콜백이 끝난 후 결과 씬으로 이동합니다.
-	call_deferred("_open_result_scene")
+	call_deferred("_change_scene", RESULT_SCENE)
 
 
-func _open_result_scene() -> void:
-	print("[Loading] 결과 씬으로 이동: ", RESULT_SCENE)
+# 씬 전환을 한 곳에서 처리합니다.
+# target_scene에는 이동할 씬 경로를 넣습니다.
+func _change_scene(target_scene: String) -> void:
+	# 같은 요청이 여러 번 들어와도 한 번만 전환합니다.
+	if scene_transitioning:
+		print(
+			"[Loading] 이미 씬 전환 중입니다. 요청을 무시합니다: ",
+			target_scene
+		)
+		return
 
-	var err: Error = get_tree().change_scene_to_file(RESULT_SCENE)
+	scene_transitioning = true
+
+	print("[Loading] 씬 전환: ", target_scene)
+
+	var err: Error = get_tree().change_scene_to_file(target_scene)
 
 	if err != OK:
+		scene_transitioning = false
+
 		push_error(
-			"[Loading] 결과 씬 전환 실패: %s / %s"
-			% [RESULT_SCENE, error_string(err)]
+			"[Loading] 씬 전환 실패: %s / %s"
+			% [target_scene, error_string(err)]
 		)
 
 		if loading_label:
 			loading_label.text = (
-				"결과 화면으로 이동하지 못했습니다.\n"
-				+ error_string(err)
-			)
-
-
-func _go_next_scene() -> void:
-	print("[Loading] 녹음 데이터가 없어 다음 씬으로 이동합니다.")
-
-	var err: Error = get_tree().change_scene_to_file(NEXT_SCENE)
-
-	if err != OK:
-		push_error(
-			"[Loading] 다음 씬 전환 실패: %s / %s"
-			% [NEXT_SCENE, error_string(err)]
-		)
-
-		if loading_label:
-			loading_label.text = (
-				"다음 화면으로 이동하지 못했습니다.\n"
+				"화면으로 이동하지 못했습니다.\n"
 				+ error_string(err)
 			)
