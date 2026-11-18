@@ -1,0 +1,30 @@
+[gd_scene format=3 uid="uid://4v3rme5g5t6h"]
+
+[ext_resource type="Script" uid="uid://ccggvh3b5oifi" path="res://scenes/furniture/phone_desk/phone_desk.gd" id="1_ysfim"]
+[ext_resource type="Texture2D" uid="uid://bm4jqlwlt4w75" path="res://assets/modern/interiors.png" id="2_gm7iu"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_opftm"]
+size = Vector2(32, 32)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_hwymj"]
+size = Vector2(64, 64)
+
+[node name="phone" type="StaticBody2D" unique_id=1225648025]
+script = ExtResource("1_ysfim")
+block = Vector2i(2, 1)
+metadata/_edit_group_ = true
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="." unique_id=654339475]
+shape = SubResource("RectangleShape2D_opftm")
+
+[node name="Sprite2D" type="Sprite2D" parent="." unique_id=846010846]
+texture = ExtResource("2_gm7iu")
+region_enabled = true
+region_rect = Rect2(117, 216, 38, 21)
+
+[node name="Area2D" type="Area2D" parent="." unique_id=1880150110]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Area2D" unique_id=360636679]
+shape = SubResource("RectangleShape2D_hwymj")
+
+[connection signal="area_entered" from="Area2D" to="." method="_on_area_2d_area_entered"]
