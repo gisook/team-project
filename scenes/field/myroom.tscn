@@ -4,8 +4,6 @@
 [ext_resource type="Texture2D" uid="uid://dikful3bhpyji" path="res://image/Interiors_free/16x16/Room_Builder_free_16x16.png" id="2_s2ng0"]
 [ext_resource type="PackedScene" uid="uid://te0sei2euqjf" path="res://scenes/character/maincharacter/maincharacter.tscn" id="4_dq1o8"]
 [ext_resource type="PackedScene" uid="uid://c4br3r26opem2" path="res://scenes/field/phone.tscn" id="5_dq1o8"]
-[ext_resource type="PackedScene" uid="uid://4v3rme5g5t6h" path="res://scenes/furniture/phone_desk/phone_desk.tscn" id="5_uqug0"]
-[ext_resource type="PackedScene" uid="uid://dpmeqt0dag8ws" path="res://scenes/furniture/bed/bed.tscn" id="6_uqug0"]
 
 [sub_resource type="PhysicsMaterial" id="PhysicsMaterial_dq1o8"]
 
@@ -2734,7 +2732,6 @@ tile_map_data = PackedByteArray("AAALAAQAAAAHAA0AAAALAAUAAAAHAA4AAAAMAAQAAAAIAA0
 tile_set = SubResource("TileSet_13qdw")
 
 [node name="Maincharacter" parent="." unique_id=345337222 instance=ExtResource("4_dq1o8")]
-z_index = 1
 position = Vector2(137, 149)
 
 [node name="Camera2D" type="Camera2D" parent="." unique_id=606099370]
@@ -2742,10 +2739,3 @@ position = Vector2(131, 152)
 zoom = Vector2(2.4, 2.4)
 
 [node name="Phone" parent="." unique_id=2085269762 instance=ExtResource("5_dq1o8")]
-
-[node name="phone_desk" parent="." unique_id=1225648025 node_paths=PackedStringArray("phone_screen") instance=ExtResource("5_uqug0")]
-position = Vector2(200, 82.5)
-phone_screen = NodePath("../Phone")
-
-[node name="bed" parent="." unique_id=587857277 instance=ExtResource("6_uqug0")]
-position = Vector2(72, 92)

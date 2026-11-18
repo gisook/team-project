@@ -38,14 +38,7 @@ func on_task_clicked(task_name: String):
 	get_tree().change_scene_to_file(target_scene)
 	# (나중에 여기에 화면이 넘어가거나 팝업이 뜨는 코드를 추가하시면 됩니다.)
 
-func _input(event: InputEvent) -> void:
-	if event.is_echo():
-		return
-
-	if event.is_action_pressed("open_phone") and phone_panel.visible:
-		phone_panel.hide()
-		get_viewport().set_input_as_handled()
-
-func open_phone() -> void:
-	show()
-	phone_panel.show()
+func _input(event):
+	# Q 키(open_phone)를 누르면 스마트폰 화면을 켜고 끕니다.
+	if event.is_action_pressed("open_phone"):
+		phone_panel.visible = not phone_panel.visible
