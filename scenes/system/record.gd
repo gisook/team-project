@@ -6,12 +6,14 @@ signal record_finished
 const SAVE_DIR: String = "user://recorded"
 const RECORD_BUS_NAME: String = "Record"
 const RECORD_EFFECT_INDEX: int = 0
+const METER_EFFECT_INDEX: int = 1
 const DEFAULT_LOCALE: String = "ko-KR"
 
 @onready var panel = $Panel
 @onready var target_text_label = $Panel/TargetTextLabel
 @onready var record_button = $Panel/Button
 @onready var mic_player = $MicPlayer
+@onready var audio_check = $Panel/AudioCheck
 
 var effect_record: AudioEffectRecord
 
@@ -66,6 +68,8 @@ func _ready() -> void:
 		return
 
 	effect_record.set_recording_active(false)
+	if AudioServer.get_bus_effect_count(bus_idx) > METER_EFFECT_INDEX:
+		audio_check.capture = AudioServer.get_bus_effect(bus_idx, METER_EFFECT_INDEX) as AudioEffectCapture
 
 	if not _ensure_save_directory():
 		_disable_recording("녹음 저장 폴더를 만들 수 없습니다.")
@@ -112,6 +116,7 @@ func _start_recording() -> void:
 	record_button.modulate = Color(1.0, 0.5, 0.5)
 
 	effect_record.set_recording_active(true)
+	audio_check.set_recording_active(true)
 	mic_player.play()
 
 	print("녹음 시작됨!")
@@ -122,6 +127,7 @@ func _stop_recording_and_save() -> void:
 
 	effect_record.set_recording_active(false)
 	mic_player.stop()
+	audio_check.set_recording_active(false)
 
 	_reset_record_button()
 

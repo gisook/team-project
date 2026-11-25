@@ -1,6 +1,7 @@
 [gd_scene format=3 uid="uid://doh4osupbuxpx"]
 
 [ext_resource type="Script" uid="uid://c3m5fy0cgpv1v" path="res://scenes/system/record.gd" id="1_yhbhf"]
+[ext_resource type="PackedScene" path="res://scenes/system/audio_check.tscn" id="2_audio_check"]
 
 [sub_resource type="AudioStreamMicrophone" id="AudioStreamMicrophone_xrivr"]
 
@@ -27,6 +28,19 @@ grow_vertical = 2
 theme_override_font_sizes/font_size = 32
 text = "읽을 텍스트"
 horizontal_alignment = 1
+
+[node name="AudioCheck" parent="Panel" instance=ExtResource("2_audio_check")]
+layout_mode = 1
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -25.5
+offset_top = -275.0
+offset_right = 25.5
+offset_bottom = -212.0
+grow_horizontal = 2
+grow_vertical = 0
 
 [node name="Button" type="Button" parent="Panel" unique_id=1395777878]
 layout_mode = 1
