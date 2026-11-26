@@ -4,13 +4,17 @@ extends CanvasLayer
 @onready var phone_panel = $Panel
 @onready var vbox_container = $Panel/VBoxContainer
 @onready var base_button = $Panel/VBoxContainer/todoButton
+@onready var anim_player = $AnimationPlayer
 
 var target_scene = "res://scenes/field/test1.tscn"
+var is_phone_open: bool = false
 
 # 임시 할 일 데이터 리스트
-var task_list = [
-	"오전 10시: 편의점 알바",
-]
+# todo : { "text", target_scene }
+var task_list = {
+	"오전 10시: 편의점 알바" : "res://scenes/field/test1.tscn"
+	}
+
 
 func _ready():
 	# 게임 시작 시 폰 화면과 원본 버튼을 숨겨둡니다.
@@ -35,10 +39,19 @@ func populate_tasks():
 
 func on_task_clicked(task_name: String):
 	# 어떤 버튼이 눌렸는지 하단 출력(Output) 창에 띄워줍니다.
-	get_tree().change_scene_to_file(target_scene)
+	get_tree().change_scene_to_file(task_list[task_name])
 	# (나중에 여기에 화면이 넘어가거나 팝업이 뜨는 코드를 추가하시면 됩니다.)
 
 func _input(event):
 	# Q 키(open_phone)를 누르면 스마트폰 화면을 켜고 끕니다.
 	if event.is_action_pressed("open_phone"):
-		phone_panel.visible = not phone_panel.visible
+		if anim_player.is_playing():
+			return  # 애니메이션 도중 중복 입력 방지
+
+		if is_phone_open:
+			anim_player.play("close")
+		else:
+			phone_panel.visible = true
+			anim_player.play("open")
+
+		is_phone_open = not is_phone_open
